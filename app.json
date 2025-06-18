@@ -1,0 +1,52 @@
+{
+  "name": "Salesforce MCP Server",
+  "description": "A Salesforce connector MCP Server for Claude integration",
+  "repository": "https://github.com/tsmztech/mcp-server-salesforce",
+  "logo": "https://www.salesforce.com/content/dam/web/en_us/www/images/nav/salesforce-logo.svg",
+  "keywords": ["mcp", "salesforce", "claude", "ai", "api"],
+  "stack": "heroku-22",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "SALESFORCE_CONNECTION_TYPE": {
+      "description": "Authentication method: User_Password or OAuth_2.0_Client_Credentials",
+      "value": "User_Password",
+      "required": true
+    },
+    "SALESFORCE_USERNAME": {
+      "description": "Your Salesforce username (for User_Password auth)",
+      "required": false
+    },
+    "SALESFORCE_PASSWORD": {
+      "description": "Your Salesforce password (for User_Password auth)",
+      "required": false
+    },
+    "SALESFORCE_TOKEN": {
+      "description": "Your Salesforce security token (for User_Password auth)",
+      "required": false
+    },
+    "SALESFORCE_CLIENT_ID": {
+      "description": "OAuth Client ID (for OAuth_2.0_Client_Credentials auth)",
+      "required": false
+    },
+    "SALESFORCE_CLIENT_SECRET": {
+      "description": "OAuth Client Secret (for OAuth_2.0_Client_Credentials auth)",
+      "required": false
+    },
+    "SALESFORCE_INSTANCE_URL": {
+      "description": "Salesforce instance URL",
+      "value": "https://login.salesforce.com",
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "addons": []
+} 
