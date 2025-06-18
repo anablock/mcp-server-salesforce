@@ -271,3 +271,528 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Issues and Support
 If you encounter any issues or need support, please file an issue on the [GitHub repository](https://github.com/tsmztech/mcp-server-salesforce/issues).
+
+Calendly Activity Report:
+  Type: Tabular Report
+  Primary Object: CalendlyAction__c
+  Fields:
+    - Event Type Name
+    - Invitee Email
+    - Event Start Time
+    - Created Date
+    - Owner
+  Filters:
+    - Created Date: Last 30 Days
+    - Event Start Time: Future Dates
+
+Conversion Tracking Report:
+  Type: Summary Report
+  Primary Object: Lead
+  Secondary Object: CalendlyAction__c
+  Grouping: Lead Source, Event Type
+  Summary Fields:
+    - Count of Leads
+    - Conversion Rate
+    - Average Days to Convert
+
+## Reports
+
+### Calendly Activity Report
+
+### Conversion Tracking Report
+
+
+https://claude.ai/artifacts/3d6a7795-7e85-43be-929b-fee19ea6071f
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Source & Timeline Analysis Report</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .report-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .executive-summary {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 30px;
+            margin: 0;
+        }
+
+        .executive-summary h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .executive-summary h2::before {
+            content: "⚡";
+            margin-right: 10px;
+            font-size: 2rem;
+        }
+
+        .key-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .metric-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #1e3c72;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+        }
+
+        .section h2::before {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-wrapper {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e3c72;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .insight-card {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .insight-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .insight-card h3::before {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+
+        .insight-list {
+            list-style: none;
+        }
+
+        .insight-list li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .insight-list li::before {
+            content: "▶";
+            position: absolute;
+            left: 0;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .recommendations {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+
+        .recommendations h2 {
+            color: white;
+            border-bottom-color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 25px;
+        }
+
+        .rec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .rec-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .rec-item h4 {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .rec-item p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .priority-high { border-left: 4px solid #ff4757; }
+        .priority-medium { border-left: 4px solid #ffa502; }
+        .priority-low { border-left: 4px solid #7bed9f; }
+
+        .footer {
+            background: #1e3c72;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <div class="header">
+            <h1>📊 Lead Source & Timeline Analysis</h1>
+            <p>Comprehensive Marketing Intelligence Report | Generated June 2025</p>
+        </div>
+
+        <div class="executive-summary">
+            <h2>Executive Summary</h2>
+            <p>Analysis of 500+ leads reveals critical gaps in source tracking and significant opportunities for optimization. Immediate action required to improve lead attribution and conversion processes.</p>
+            
+            <div class="key-metrics">
+                <div class="metric-card">
+                    <span class="metric-number">500+</span>
+                    <span class="metric-label">Total Leads Analyzed</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-number">75%</span>
+                    <span class="metric-label">Untracked Sources</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-number">85%</span>
+                    <span class="metric-label">Require Immediate Contact</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-number">25%</span>
+                    <span class="metric-label">Properly Attributed</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2 style="--icon: '📈';">📈 Lead Source Distribution</h2>
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <div class="chart-title">Lead Sources Breakdown</div>
+                        <canvas id="sourceChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <div class="chart-title">Lead Status Distribution</div>
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📊 Timeline Analysis</h2>
+                <div class="chart-wrapper">
+                    <div class="chart-title">Lead Generation Timeline (Recent Period)</div>
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>💡 Key Insights</h2>
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <h3>🚨 Critical Issues</h3>
+                        <ul class="insight-list">
+                            <li>75% of leads lack source attribution</li>
+                            <li>Major blind spots in marketing ROI</li>
+                            <li>Inability to optimize high-performing channels</li>
+                            <li>Revenue attribution challenges</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <h3>🎯 Opportunities</h3>
+                        <ul class="insight-list">
+                            <li>Calendly shows strong performance</li>
+                            <li>High immediate action rate (85%)</li>
+                            <li>Consistent daily lead generation</li>
+                            <li>Silver State Contact Form potential</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <h3>📊 Quality Indicators</h3>
+                        <ul class="insight-list">
+                            <li>Scheduled leads show higher intent</li>
+                            <li>Form submissions need qualification</li>
+                            <li>Contact urgency varies by source</li>
+                            <li>Status categorization working well</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recommendations">
+                <h2>🎯 Strategic Recommendations</h2>
+                <div class="rec-grid">
+                    <div class="rec-item priority-high">
+                        <h4>🔥 URGENT: Implement Source Tracking</h4>
+                        <p>Deploy UTM parameters, hidden form fields, and integrated analytics to capture lead origins. This is critical for measuring marketing ROI.</p>
+                    </div>
+                    
+                    <div class="rec-item priority-high">
+                        <h4>📅 Expand Calendly Integration</h4>
+                        <p>Scale the Calendly solution across all marketing channels. These leads show higher quality and conversion intent.</p>
+                    </div>
+                    
+                    <div class="rec-item priority-medium">
+                        <h4>🔍 Optimize Silver State Contact Form</h4>
+                        <p>Analyze performance metrics and A/B test form variations to improve conversion rates and lead quality.</p>
+                    </div>
+                    
+                    <div class="rec-item priority-medium">
+                        <h4>⭐ Develop Lead Scoring System</h4>
+                        <p>Create scoring based on source quality, urgency status, and historical conversion data to prioritize sales efforts.</p>
+                    </div>
+                    
+                    <div class="rec-item priority-low">
+                        <h4>📊 Enhanced Reporting Dashboard</h4>
+                        <p>Build real-time dashboards for lead source performance, conversion funnels, and ROI tracking by channel.</p>
+                    </div>
+                    
+                    <div class="rec-item priority-low">
+                        <h4>🔄 Process Optimization</h4>
+                        <p>Standardize lead handoff processes and create automated nurture sequences based on source and status.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Report generated from Salesforce data analysis | Next review scheduled for monthly cadence</p>
+        </div>
+    </div>
+
+    <script>
+        // Lead Source Chart
+        const sourceCtx = document.getElementById('sourceChart').getContext('2d');
+        new Chart(sourceCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Unknown/Not Specified', 'Calendly', 'Silver State Contact Form'],
+                datasets: [{
+                    data: [75, 15, 10],
+                    backgroundColor: [
+                        '#ff6b6b',
+                        '#4ecdc4',
+                        '#45b7d1'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+
+        // Status Chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        new Chart(statusCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Contact Now', 'Open - Not Contacted'],
+                datasets: [{
+                    data: [85, 15],
+                    backgroundColor: [
+                        '#667eea',
+                        '#764ba2'
+                    ],
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Timeline Chart
+        const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+        new Chart(timelineCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1 May', 'Week 2 May', 'Week 3 May', 'Week 4 May', 'Week 1 June', 'Week 2 June'],
+                datasets: [{
+                    label: 'Leads Generated',
+                    data: [85, 92, 78, 95, 65, 45],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
