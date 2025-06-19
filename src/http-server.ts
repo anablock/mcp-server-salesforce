@@ -3,20 +3,27 @@
 import express from 'express';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+
 import { createSalesforceConnection } from './utils/connection.js';
-import { handleSearchObjects } from './tools/search.js';
-import { handleDescribeObject } from './tools/describe.js';
-import { handleQueryRecords, QueryArgs } from './tools/query.js';
-import { handleDMLRecords, DMLArgs } from './tools/dml.js';
-import { handleManageObject, ManageObjectArgs } from './tools/manageObject.js';
-import { handleManageField, ManageFieldArgs } from './tools/manageField.js';
-import { handleSearchAll, SearchAllArgs } from './tools/searchAll.js';
-import { handleReadApex, ReadApexArgs } from './tools/readApex.js';
-import { handleWriteApex, WriteApexArgs } from './tools/writeApex.js';
-import { handleReadApexTrigger, ReadApexTriggerArgs } from './tools/readApexTrigger.js';
-import { handleWriteApexTrigger, WriteApexTriggerArgs } from './tools/writeApexTrigger.js';
-import { handleExecuteAnonymous, ExecuteAnonymousArgs } from './tools/executeAnonymous.js';
-import { handleManageDebugLogs, ManageDebugLogsArgs } from './tools/manageDebugLogs.js';
+import { SEARCH_OBJECTS, handleSearchObjects } from './tools/search.js';
+import { DESCRIBE_OBJECT, handleDescribeObject } from './tools/describe.js';
+import { QUERY_RECORDS, handleQueryRecords, QueryArgs } from './tools/query.js';
+import { DML_RECORDS, handleDMLRecords, DMLArgs } from './tools/dml.js';
+import { MANAGE_OBJECT, handleManageObject, ManageObjectArgs } from './tools/manageObject.js';
+import { MANAGE_FIELD, handleManageField, ManageFieldArgs } from './tools/manageField.js';
+import { SEARCH_ALL, handleSearchAll, SearchAllArgs, WithClause } from './tools/searchAll.js';
+import { READ_APEX, handleReadApex, ReadApexArgs } from './tools/readApex.js';
+import { WRITE_APEX, handleWriteApex, WriteApexArgs } from './tools/writeApex.js';
+import { READ_APEX_TRIGGER, handleReadApexTrigger, ReadApexTriggerArgs } from './tools/readApexTrigger.js';
+import { WRITE_APEX_TRIGGER, handleWriteApexTrigger, WriteApexTriggerArgs } from './tools/writeApexTrigger.js';
+import { EXECUTE_ANONYMOUS, handleExecuteAnonymous, ExecuteAnonymousArgs } from './tools/executeAnonymous.js';
+import { MANAGE_DEBUG_LOGS, handleManageDebugLogs, ManageDebugLogsArgs } from './tools/manageDebugLogs.js';
 
 dotenv.config();
 
@@ -27,383 +34,300 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Create MCP Server
+const server = new Server(
+  {
+    name: "salesforce-mcp-server",
+    version: "1.0.0",
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  },
+);
+
+// Tool handlers
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  tools: [
+    SEARCH_OBJECTS,
+    DESCRIBE_OBJECT,
+    QUERY_RECORDS,
+    DML_RECORDS,
+    MANAGE_OBJECT,
+    MANAGE_FIELD,
+    SEARCH_ALL,
+    READ_APEX,
+    WRITE_APEX,
+    READ_APEX_TRIGGER,
+    WRITE_APEX_TRIGGER,
+    EXECUTE_ANONYMOUS,
+    MANAGE_DEBUG_LOGS
+  ],
+}));
+
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  try {
+    const { name, arguments: args } = request.params;
+    if (!args) throw new Error('Arguments are required');
+
+    const conn = await createSalesforceConnection();
+
+    switch (name) {
+      case "salesforce_search_objects": {
+        const { searchPattern } = args as { searchPattern: string };
+        if (!searchPattern) throw new Error('searchPattern is required');
+        return await handleSearchObjects(conn, searchPattern);
+      }
+
+      case "salesforce_describe_object": {
+        const { objectName } = args as { objectName: string };
+        if (!objectName) throw new Error('objectName is required');
+        return await handleDescribeObject(conn, objectName);
+      }
+
+      case "salesforce_query_records": {
+        const queryArgs = args as Record<string, unknown>;
+        if (!queryArgs.objectName || !Array.isArray(queryArgs.fields)) {
+          throw new Error('objectName and fields array are required for query');
+        }
+        const validatedArgs: QueryArgs = {
+          objectName: queryArgs.objectName as string,
+          fields: queryArgs.fields as string[],
+          whereClause: queryArgs.whereClause as string | undefined,
+          orderBy: queryArgs.orderBy as string | undefined,
+          limit: queryArgs.limit as number | undefined
+        };
+        return await handleQueryRecords(conn, validatedArgs);
+      }
+
+      case "salesforce_dml_records": {
+        const dmlArgs = args as Record<string, unknown>;
+        if (!dmlArgs.operation || !dmlArgs.objectName || !Array.isArray(dmlArgs.records)) {
+          throw new Error('operation, objectName, and records array are required for DML');
+        }
+        const validatedArgs: DMLArgs = {
+          operation: dmlArgs.operation as 'insert' | 'update' | 'delete' | 'upsert',
+          objectName: dmlArgs.objectName as string,
+          records: dmlArgs.records as Record<string, any>[],
+          externalIdField: dmlArgs.externalIdField as string | undefined
+        };
+        return await handleDMLRecords(conn, validatedArgs);
+      }
+
+      case "salesforce_manage_object": {
+        const objectArgs = args as Record<string, unknown>;
+        if (!objectArgs.operation || !objectArgs.objectName) {
+          throw new Error('operation and objectName are required for object management');
+        }
+        const validatedArgs: ManageObjectArgs = {
+          operation: objectArgs.operation as 'create' | 'update',
+          objectName: objectArgs.objectName as string,
+          label: objectArgs.label as string | undefined,
+          pluralLabel: objectArgs.pluralLabel as string | undefined,
+          description: objectArgs.description as string | undefined,
+          nameFieldLabel: objectArgs.nameFieldLabel as string | undefined,
+          nameFieldType: objectArgs.nameFieldType as 'Text' | 'AutoNumber' | undefined,
+          nameFieldFormat: objectArgs.nameFieldFormat as string | undefined,
+          sharingModel: objectArgs.sharingModel as 'ReadWrite' | 'Read' | 'Private' | 'ControlledByParent' | undefined
+        };
+        return await handleManageObject(conn, validatedArgs);
+      }
+
+      case "salesforce_manage_field": {
+        const fieldArgs = args as Record<string, unknown>;
+        if (!fieldArgs.operation || !fieldArgs.objectName || !fieldArgs.fieldName) {
+          throw new Error('operation, objectName, and fieldName are required for field management');
+        }
+        const validatedArgs: ManageFieldArgs = {
+          operation: fieldArgs.operation as 'create' | 'update',
+          objectName: fieldArgs.objectName as string,
+          fieldName: fieldArgs.fieldName as string,
+          label: fieldArgs.label as string | undefined,
+          type: fieldArgs.type as string | undefined,
+          required: fieldArgs.required as boolean | undefined,
+          unique: fieldArgs.unique as boolean | undefined,
+          externalId: fieldArgs.externalId as boolean | undefined,
+          length: fieldArgs.length as number | undefined,
+          precision: fieldArgs.precision as number | undefined,
+          scale: fieldArgs.scale as number | undefined,
+          referenceTo: fieldArgs.referenceTo as string | undefined,
+          relationshipLabel: fieldArgs.relationshipLabel as string | undefined,
+          relationshipName: fieldArgs.relationshipName as string | undefined,
+          deleteConstraint: fieldArgs.deleteConstraint as 'Cascade' | 'Restrict' | 'SetNull' | undefined,
+          picklistValues: fieldArgs.picklistValues as Array<{ label: string; isDefault?: boolean }> | undefined,
+          description: fieldArgs.description as string | undefined
+        };
+        return await handleManageField(conn, validatedArgs);
+      }
+
+      case "salesforce_search_all": {
+        const searchArgs = args as Record<string, unknown>;
+        if (!searchArgs.searchTerm || !Array.isArray(searchArgs.objects)) {
+          throw new Error('searchTerm and objects array are required for search');
+        }
+
+        const objects = searchArgs.objects as Array<Record<string, unknown>>;
+        if (!objects.every(obj => obj.name && Array.isArray(obj.fields))) {
+          throw new Error('Each object must specify name and fields array');
+        }
+
+        const validatedArgs: SearchAllArgs = {
+          searchTerm: searchArgs.searchTerm as string,
+          searchIn: searchArgs.searchIn as "ALL FIELDS" | "NAME FIELDS" | "EMAIL FIELDS" | "PHONE FIELDS" | "SIDEBAR FIELDS" | undefined,
+          objects: objects.map(obj => ({
+            name: obj.name as string,
+            fields: obj.fields as string[],
+            where: obj.where as string | undefined,
+            orderBy: obj.orderBy as string | undefined,
+            limit: obj.limit as number | undefined
+          })),
+          withClauses: searchArgs.withClauses as WithClause[] | undefined,
+          updateable: searchArgs.updateable as boolean | undefined,
+          viewable: searchArgs.viewable as boolean | undefined
+        };
+
+        return await handleSearchAll(conn, validatedArgs);
+      }
+
+      case "salesforce_read_apex": {
+        const apexArgs = args as Record<string, unknown>;
+        const validatedArgs: ReadApexArgs = {
+          className: apexArgs.className as string | undefined,
+          namePattern: apexArgs.namePattern as string | undefined,
+          includeMetadata: apexArgs.includeMetadata as boolean | undefined
+        };
+        return await handleReadApex(conn, validatedArgs);
+      }
+
+      case "salesforce_write_apex": {
+        const apexArgs = args as Record<string, unknown>;
+        if (!apexArgs.operation || !apexArgs.className || !apexArgs.body) {
+          throw new Error('operation, className, and body are required for Apex writing');
+        }
+        const validatedArgs: WriteApexArgs = {
+          operation: apexArgs.operation as 'create' | 'update',
+          className: apexArgs.className as string,
+          body: apexArgs.body as string,
+          apiVersion: apexArgs.apiVersion as string | undefined
+        };
+        return await handleWriteApex(conn, validatedArgs);
+      }
+
+      case "salesforce_read_apex_trigger": {
+        const triggerArgs = args as Record<string, unknown>;
+        const validatedArgs: ReadApexTriggerArgs = {
+          triggerName: triggerArgs.triggerName as string | undefined,
+          namePattern: triggerArgs.namePattern as string | undefined,
+          includeMetadata: triggerArgs.includeMetadata as boolean | undefined
+        };
+        return await handleReadApexTrigger(conn, validatedArgs);
+      }
+
+      case "salesforce_write_apex_trigger": {
+        const triggerArgs = args as Record<string, unknown>;
+        if (!triggerArgs.operation || !triggerArgs.triggerName || !triggerArgs.body) {
+          throw new Error('operation, triggerName, and body are required for trigger writing');
+        }
+        const validatedArgs: WriteApexTriggerArgs = {
+          operation: triggerArgs.operation as 'create' | 'update',
+          triggerName: triggerArgs.triggerName as string,
+          objectName: triggerArgs.objectName as string | undefined,
+          body: triggerArgs.body as string,
+          apiVersion: triggerArgs.apiVersion as string | undefined
+        };
+        return await handleWriteApexTrigger(conn, validatedArgs);
+      }
+
+      case "salesforce_execute_anonymous": {
+        const executeArgs = args as Record<string, unknown>;
+        if (!executeArgs.apexCode) {
+          throw new Error('apexCode is required for anonymous execution');
+        }
+        const validatedArgs: ExecuteAnonymousArgs = {
+          apexCode: executeArgs.apexCode as string
+        };
+        return await handleExecuteAnonymous(conn, validatedArgs);
+      }
+
+      case "salesforce_manage_debug_logs": {
+        const debugArgs = args as Record<string, unknown>;
+        if (!debugArgs.operation || !debugArgs.username) {
+          throw new Error('operation and username are required for debug log management');
+        }
+        const validatedArgs: ManageDebugLogsArgs = {
+          operation: debugArgs.operation as 'enable' | 'disable' | 'retrieve',
+          username: debugArgs.username as string,
+          logLevel: debugArgs.logLevel as 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'FINE' | 'FINER' | 'FINEST' | undefined,
+          expirationTime: debugArgs.expirationTime as number | undefined,
+          limit: debugArgs.limit as number | undefined,
+          logId: debugArgs.logId as string | undefined,
+          includeBody: debugArgs.includeBody as boolean | undefined
+        };
+        return await handleManageDebugLogs(conn, validatedArgs);
+      }
+
+      default:
+        throw new Error(`Unknown tool: ${name}`);
+    }
+  } catch (error: any) {
+    console.error(`Error executing tool ${request.params.name}:`, error);
+    throw error;
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Get available tools
-app.get('/tools', (req, res) => {
-  res.json({
-    tools: [
-      {
-        name: 'salesforce_search_objects',
-        description: 'Search for Salesforce objects by name pattern',
-        parameters: { searchPattern: 'string' }
-      },
-      {
-        name: 'salesforce_describe_object',
-        description: 'Get detailed information about a Salesforce object',
-        parameters: { objectName: 'string' }
-      },
-      {
-        name: 'salesforce_query_records',
-        description: 'Query records from Salesforce objects',
-        parameters: { 
-          objectName: 'string', 
-          fields: 'string[]', 
-          whereClause: 'string?', 
-          orderBy: 'string?', 
-          limit: 'number?' 
-        }
-      },
-      {
-        name: 'salesforce_dml_records',
-        description: 'Perform DML operations (insert, update, delete, upsert) on records',
-        parameters: { 
-          operation: 'insert|update|delete|upsert', 
-          objectName: 'string', 
-          records: 'object[]', 
-          externalIdField: 'string?' 
-        }
-      },
-      {
-        name: 'salesforce_manage_object',
-        description: 'Create or update custom objects',
-        parameters: { 
-          operation: 'create|update', 
-          objectName: 'string', 
-          label: 'string?',
-          // ... other parameters
-        }
-      },
-      {
-        name: 'salesforce_manage_field',
-        description: 'Create or update custom fields',
-        parameters: { 
-          operation: 'create|update', 
-          objectName: 'string', 
-          fieldName: 'string',
-          // ... other parameters
-        }
-      },
-      {
-        name: 'salesforce_search_all',
-        description: 'Search across multiple Salesforce objects using SOSL',
-        parameters: { 
-          searchTerm: 'string', 
-          objects: 'object[]',
-          // ... other parameters
-        }
-      },
-      {
-        name: 'salesforce_read_apex',
-        description: 'Read Apex classes',
-        parameters: { 
-          className: 'string?', 
-          namePattern: 'string?', 
-          includeMetadata: 'boolean?' 
-        }
-      },
-      {
-        name: 'salesforce_write_apex',
-        description: 'Create or update Apex classes',
-        parameters: { 
-          operation: 'create|update',
-          className: 'string', 
-          body: 'string', 
-          apiVersion: 'string?' 
-        }
-      },
-      {
-        name: 'salesforce_read_apex_trigger',
-        description: 'Read Apex triggers',
-        parameters: { 
-          triggerName: 'string?', 
-          namePattern: 'string?', 
-          includeMetadata: 'boolean?' 
-        }
-      },
-      {
-        name: 'salesforce_write_apex_trigger',
-        description: 'Create or update Apex triggers',
-        parameters: { 
-          operation: 'create|update',
-          triggerName: 'string', 
-          objectName: 'string?', 
-          body: 'string', 
-          apiVersion: 'string?' 
-        }
-      },
-      {
-        name: 'salesforce_execute_anonymous',
-        description: 'Execute anonymous Apex code',
-        parameters: { 
-          apexCode: 'string' 
-        }
-      },
-      {
-        name: 'salesforce_manage_debug_logs',
-        description: 'Manage debug logs for users',
-        parameters: { 
-          operation: 'enable|disable|retrieve', 
-          username: 'string', 
-          logLevel: 'string?',
-          expirationTime: 'number?',
-          limit: 'number?',
-          logId: 'string?',
-          includeBody: 'boolean?'
-        }
-      }
-    ]
-  });
-});
+// Store transports for session management
+const transports: Record<string, SSEServerTransport> = {};
 
-// Tool execution endpoint
-app.post('/tools/:toolName', async (req, res) => {
+// SSE endpoint for MCP protocol
+app.get('/mcp', async (req, res) => {
   try {
-    const { toolName } = req.params;
-    const args = req.body;
-
-    console.log(`Executing tool: ${toolName}`, { args });
-
-    const conn = await createSalesforceConnection();
-
-    let result;
-
-    switch (toolName) {
-      case 'salesforce_search_objects': {
-        const { searchPattern } = args;
-        if (!searchPattern) throw new Error('searchPattern is required');
-        result = await handleSearchObjects(conn, searchPattern);
-        break;
-      }
-
-      case 'salesforce_describe_object': {
-        const { objectName } = args;
-        if (!objectName) throw new Error('objectName is required');
-        result = await handleDescribeObject(conn, objectName);
-        break;
-      }
-
-      case 'salesforce_query_records': {
-        if (!args.objectName || !Array.isArray(args.fields)) {
-          throw new Error('objectName and fields array are required for query');
-        }
-        const validatedArgs: QueryArgs = {
-          objectName: args.objectName,
-          fields: args.fields,
-          whereClause: args.whereClause,
-          orderBy: args.orderBy,
-          limit: args.limit
-        };
-        result = await handleQueryRecords(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_dml_records': {
-        if (!args.operation || !args.objectName || !Array.isArray(args.records)) {
-          throw new Error('operation, objectName, and records array are required for DML');
-        }
-        const validatedArgs: DMLArgs = {
-          operation: args.operation,
-          objectName: args.objectName,
-          records: args.records,
-          externalIdField: args.externalIdField
-        };
-        result = await handleDMLRecords(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_manage_object': {
-        if (!args.operation || !args.objectName) {
-          throw new Error('operation and objectName are required for object management');
-        }
-        const validatedArgs: ManageObjectArgs = {
-          operation: args.operation,
-          objectName: args.objectName,
-          label: args.label,
-          pluralLabel: args.pluralLabel,
-          description: args.description,
-          nameFieldLabel: args.nameFieldLabel,
-          nameFieldType: args.nameFieldType,
-          nameFieldFormat: args.nameFieldFormat,
-          sharingModel: args.sharingModel
-        };
-        result = await handleManageObject(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_manage_field': {
-        if (!args.operation || !args.objectName || !args.fieldName) {
-          throw new Error('operation, objectName, and fieldName are required for field management');
-        }
-        const validatedArgs: ManageFieldArgs = {
-          operation: args.operation,
-          objectName: args.objectName,
-          fieldName: args.fieldName,
-          label: args.label,
-          type: args.type,
-          required: args.required,
-          unique: args.unique,
-          externalId: args.externalId,
-          length: args.length,
-          precision: args.precision,
-          scale: args.scale,
-          referenceTo: args.referenceTo,
-          relationshipLabel: args.relationshipLabel,
-          relationshipName: args.relationshipName,
-          deleteConstraint: args.deleteConstraint,
-          picklistValues: args.picklistValues,
-          description: args.description
-        };
-        result = await handleManageField(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_search_all': {
-        if (!args.searchTerm || !Array.isArray(args.objects)) {
-          throw new Error('searchTerm and objects array are required for search');
-        }
-        const validatedArgs: SearchAllArgs = {
-          searchTerm: args.searchTerm,
-          searchIn: args.searchIn,
-          objects: args.objects,
-          withClauses: args.withClauses,
-          updateable: args.updateable,
-          viewable: args.viewable
-        };
-        result = await handleSearchAll(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_read_apex': {
-        const validatedArgs: ReadApexArgs = {
-          className: args.className,
-          namePattern: args.namePattern,
-          includeMetadata: args.includeMetadata
-        };
-        result = await handleReadApex(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_write_apex': {
-        if (!args.className || !args.body || !args.operation) {
-          throw new Error('operation, className and body are required for Apex class creation/update');
-        }
-        const validatedArgs: WriteApexArgs = {
-          operation: args.operation,
-          className: args.className,
-          body: args.body,
-          apiVersion: args.apiVersion
-        };
-        result = await handleWriteApex(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_read_apex_trigger': {
-        const validatedArgs: ReadApexTriggerArgs = {
-          triggerName: args.triggerName,
-          namePattern: args.namePattern,
-          includeMetadata: args.includeMetadata
-        };
-        result = await handleReadApexTrigger(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_write_apex_trigger': {
-        if (!args.triggerName || !args.body || !args.operation) {
-          throw new Error('operation, triggerName, and body are required for trigger creation/update');
-        }
-        const validatedArgs: WriteApexTriggerArgs = {
-          operation: args.operation,
-          triggerName: args.triggerName,
-          objectName: args.objectName,
-          body: args.body,
-          apiVersion: args.apiVersion
-        };
-        result = await handleWriteApexTrigger(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_execute_anonymous': {
-        if (!args.apexCode) {
-          throw new Error('apexCode is required for anonymous execution');
-        }
-        const validatedArgs: ExecuteAnonymousArgs = {
-          apexCode: args.apexCode
-        };
-        result = await handleExecuteAnonymous(conn, validatedArgs);
-        break;
-      }
-
-      case 'salesforce_manage_debug_logs': {
-        if (!args.operation || !args.username) {
-          throw new Error('operation and username are required for debug log management');
-        }
-        const validatedArgs: ManageDebugLogsArgs = {
-          operation: args.operation,
-          username: args.username,
-          logLevel: args.logLevel,
-          expirationTime: args.expirationTime,
-          limit: args.limit,
-          logId: args.logId,
-          includeBody: args.includeBody
-        };
-        result = await handleManageDebugLogs(conn, validatedArgs);
-        break;
-      }
-
-      default:
-        throw new Error(`Unknown tool: ${toolName}`);
-    }
-
-    res.json({
-      success: true,
-      result: result,
-      timestamp: new Date().toISOString()
+    const transport = new SSEServerTransport('/messages', res);
+    const sessionId = transport.sessionId;
+    transports[sessionId] = transport;
+    
+    res.on("close", () => {
+      delete transports[sessionId];
     });
-
+    
+    await server.connect(transport);
+    await transport.start();
   } catch (error) {
-    console.error(`Error executing tool ${req.params.toolName}:`, error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
+    console.error('MCP SSE endpoint error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 });
 
-// Generic tool execution endpoint (for MCP-style requests)
-app.post('/mcp/call_tool', async (req, res) => {
+// Message endpoint for MCP protocol
+app.post('/messages', async (req, res) => {
   try {
-    const { name, arguments: args } = req.body;
-    
-    // Redirect to the specific tool endpoint
-    const toolResponse = await fetch(`${req.protocol}://${req.get('host')}/tools/${name}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(args)
-    });
-    
-    const result = await toolResponse.json();
-    res.json(result);
+    const sessionId = req.query.sessionId as string;
+    const transport = transports[sessionId];
+    if (transport) {
+      await transport.handlePostMessage(req, res);
+    } else {
+      res.status(400).json({ error: 'No transport found for sessionId' });
+    }
   } catch (error) {
-    console.error('Error in MCP call_tool:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    console.error('MCP message endpoint error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 });
 
 // Start server
 app.listen(port, () => {
-  console.log(`🚀 Salesforce MCP HTTP Server running on port ${port}`);
-  console.log(`📡 Health check: http://localhost:${port}/health`);
-  console.log(`🔧 Available tools: http://localhost:${port}/tools`);
+  console.log(`🚀 Salesforce MCP Server running on port ${port}`);
+  console.log(`📡 MCP endpoint: http://localhost:${port}/mcp`);
+  console.log(`🏥 Health check: http://localhost:${port}/health`);
 });
 
 export default app; 
