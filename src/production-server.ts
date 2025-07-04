@@ -11,7 +11,7 @@ import { QUERY_RECORDS, handleQueryRecords, QueryArgs } from "./tools/query.js";
 import { DML_RECORDS, handleDMLRecords, DMLArgs } from "./tools/dml.js";
 import { MANAGE_OBJECT, handleManageObject, ManageObjectArgs } from "./tools/manageObject.js";
 import { MANAGE_FIELD, handleManageField, ManageFieldArgs } from "./tools/manageField.js";
-import { SEARCH_ALL, handleSearchAll, SearchAllArgs, WithClause } from "./tools/searchAll.js";
+import { SEARCH_ALL, handleSearchAll, SearchAllArgs } from "./tools/searchAll.js";
 import { READ_APEX, handleReadApex, ReadApexArgs } from "./tools/readApex.js";
 import { WRITE_APEX, handleWriteApex, WriteApexArgs } from "./tools/writeApex.js";
 import { READ_APEX_TRIGGER, handleReadApexTrigger, ReadApexTriggerArgs } from "./tools/readApexTrigger.js";
@@ -23,14 +23,56 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === 'production';
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
+
+// Enhanced CORS configuration for production
+const corsOptions = {
+  origin: isProduction ? allowedOrigins : true,
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
+
+// Security headers for production
+if (isProduction) {
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    environment: isProduction ? 'production' : 'development',
+    version: process.env.npm_package_version || '0.0.2'
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Salesforce MCP Server',
+    version: process.env.npm_package_version || '0.0.2',
+    environment: isProduction ? 'production' : 'development',
+    endpoints: {
+      health: '/health',
+      tools: '/tools',
+      mcp: '/mcp'
+    },
+    documentation: 'https://github.com/your-repo/mcp-server-salesforce'
+  });
 });
 
 // List all available tools
@@ -51,20 +93,24 @@ app.get('/tools', (req, res) => {
     MANAGE_DEBUG_LOGS
   ];
 
-  res.json({ tools });
+  res.json({ 
+    tools,
+    count: tools.length,
+    server: 'Salesforce MCP Server'
+  });
 });
 
-// Execute a specific tool
+// Execute a specific tool (REST API)
 app.post('/tools/:toolName', async (req, res) => {
   try {
     const { toolName } = req.params;
     const args = req.body;
 
-    console.log(`Executing tool: ${toolName} with args:`, args);
+    console.log(`[${new Date().toISOString()}] Executing tool: ${toolName}`);
 
     const conn = await createSalesforceConnection();
-
     let result;
+
     switch (toolName) {
       case "salesforce_search_objects": {
         const { searchPattern } = args;
@@ -159,36 +205,23 @@ app.post('/tools/:toolName', async (req, res) => {
         if (!args.searchTerm || !Array.isArray(args.objects)) {
           throw new Error('searchTerm and objects array are required for search');
         }
-
-        const objects = args.objects;
-        if (!objects.every((obj: any) => obj.name && Array.isArray(obj.fields))) {
-          throw new Error('Each object must specify name and fields array');
-        }
-
         const validatedArgs: SearchAllArgs = {
           searchTerm: args.searchTerm,
           searchIn: args.searchIn,
-          objects: objects.map((obj: any) => ({
-            name: obj.name,
-            fields: obj.fields,
-            where: obj.where,
-            orderBy: obj.orderBy,
-            limit: obj.limit
-          })),
+          objects: args.objects,
           withClauses: args.withClauses,
           updateable: args.updateable,
           viewable: args.viewable
         };
-
         result = await handleSearchAll(conn, validatedArgs);
         break;
       }
 
       case "salesforce_read_apex": {
         const validatedArgs: ReadApexArgs = {
-          className: args.className,
-          namePattern: args.namePattern,
-          includeMetadata: args.includeMetadata
+          className: args?.className,
+          namePattern: args?.namePattern,
+          includeMetadata: args?.includeMetadata
         };
         result = await handleReadApex(conn, validatedArgs);
         break;
@@ -210,9 +243,9 @@ app.post('/tools/:toolName', async (req, res) => {
 
       case "salesforce_read_apex_trigger": {
         const validatedArgs: ReadApexTriggerArgs = {
-          triggerName: args.triggerName,
-          namePattern: args.namePattern,
-          includeMetadata: args.includeMetadata
+          triggerName: args?.triggerName,
+          namePattern: args?.namePattern,
+          includeMetadata: args?.includeMetadata
         };
         result = await handleReadApexTrigger(conn, validatedArgs);
         break;
@@ -267,7 +300,7 @@ app.post('/tools/:toolName', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error(`Error executing tool ${req.params.toolName}:`, error);
+    console.error(`[${new Date().toISOString()}] Error executing tool ${req.params.toolName}:`, error);
     res.status(500).json({
       content: [
         {
@@ -309,9 +342,12 @@ app.get('/mcp', (req, res) => {
   });
 });
 
+// MCP POST endpoint for JSON-RPC calls
 app.post('/mcp', async (req, res) => {
   try {
     const { method, params, id } = req.body;
+    
+    console.log(`[${new Date().toISOString()}] MCP method: ${method}`);
     
     if (method === 'initialize') {
       res.json({
@@ -325,25 +361,17 @@ app.post('/mcp', async (req, res) => {
           },
           serverInfo: {
             name: 'Salesforce MCP Server',
-            version: '0.0.2'
+            version: process.env.npm_package_version || '0.0.2'
           }
         }
       });
       return;
     }
 
-    if (method === 'initialized') {
+    if (method === 'initialized' || method === 'notifications/initialized') {
       res.json({
         jsonrpc: '2.0',
-        id,
-        result: {}
-      });
-      return;
-    }
-
-    if (method === 'notifications/initialized') {
-      res.json({
-        jsonrpc: '2.0',
+        id: id || null,
         result: {}
       });
       return;
@@ -377,8 +405,8 @@ app.post('/mcp', async (req, res) => {
     if (method === 'tools/call') {
       const { name: toolName, arguments: args } = params;
              
-       const conn = await createSalesforceConnection();
-       let result;
+      const conn = await createSalesforceConnection();
+      let result;
       
       switch (toolName) {
         case "salesforce_search_objects": {
@@ -584,6 +612,7 @@ app.post('/mcp', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error(`[${new Date().toISOString()}] MCP Error:`, error);
     res.status(500).json({
       jsonrpc: '2.0',
       id: req.body?.id,
@@ -595,9 +624,27 @@ app.post('/mcp', async (req, res) => {
   }
 });
 
+// Error handling middleware
+app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(`[${new Date().toISOString()}] Unhandled error:`, error);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: isProduction ? 'Something went wrong' : error.message
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Route ${req.method} ${req.path} not found`
+  });
+});
+
 app.listen(port, () => {
-  console.log(`🚀 Salesforce MCP HTTP Server running on port ${port}`);
+  console.log(`🚀 Salesforce MCP Production Server running on port ${port}`);
   console.log(`📊 Health check: http://localhost:${port}/health`);
   console.log(`🔧 Tools endpoint: http://localhost:${port}/tools`);
   console.log(`🔌 MCP endpoint: http://localhost:${port}/mcp`);
+  console.log(`🌍 Environment: ${isProduction ? 'production' : 'development'}`);
 });
