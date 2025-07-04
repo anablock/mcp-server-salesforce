@@ -313,13 +313,23 @@ app.post('/tools/:toolName', async (req, res) => {
   }
 });
 
+// Handle OPTIONS requests for CORS preflight
+app.options('/mcp', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
 // MCP endpoint for SSE connection
 app.get('/mcp', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
   // Send initial connection message
   res.write(`data: ${JSON.stringify({
