@@ -25,6 +25,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
+const vercelOrigin = 'https://example-remote-client-14tzxdp80-anablock.vercel.app';
+if (!allowedOrigins.includes(vercelOrigin) && !allowedOrigins.includes('*')) {
+  allowedOrigins.push(vercelOrigin);
+}
 
 // Enhanced CORS configuration for production
 const corsOptions = {
@@ -71,7 +75,7 @@ app.get('/', (req, res) => {
       tools: '/tools',
       mcp: '/mcp'
     },
-    documentation: 'https://github.com/your-repo/mcp-server-salesforce'
+    documentation: 'https://github.com/anablock/mcp-server-salesforce'
   });
 });
 
@@ -315,7 +319,12 @@ app.post('/tools/:toolName', async (req, res) => {
 
 // Handle OPTIONS requests for CORS preflight
 app.options('/mcp', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin && (allowedOrigins.includes(origin) || allowedOrigins.includes('*'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
   res.setHeader('Access-Control-Max-Age', '86400');
@@ -327,7 +336,12 @@ app.get('/mcp', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin && (allowedOrigins.includes(origin) || allowedOrigins.includes('*'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
@@ -355,7 +369,12 @@ app.get('/mcp', (req, res) => {
 // MCP POST endpoint for JSON-RPC calls
 app.post('/mcp', async (req, res) => {
   // Set CORS headers for the POST request
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin && (allowedOrigins.includes(origin) || allowedOrigins.includes('*'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
   
