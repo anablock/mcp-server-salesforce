@@ -436,6 +436,24 @@ app.post('/mcp', async (req, res) => {
       return;
     }
 
+    if (method === 'resources/list') {
+      res.json({
+        jsonrpc: '2.0',
+        id,
+        result: { resources: [] }
+      });
+      return;
+    }
+
+    if (method === 'prompts/list') {
+      res.json({
+        jsonrpc: '2.0',
+        id,
+        result: { prompts: [] }
+      });
+      return;
+    }
+
     if (method === 'tools/call') {
       const { name: toolName, arguments: args } = params;
              
