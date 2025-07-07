@@ -354,6 +354,11 @@ app.get('/mcp', (req, res) => {
 
 // MCP POST endpoint for JSON-RPC calls
 app.post('/mcp', async (req, res) => {
+  // Set CORS headers for the POST request
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+  
   try {
     const { method, params, id } = req.body;
     
