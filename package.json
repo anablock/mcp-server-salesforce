@@ -29,7 +29,9 @@
         "heroku-postbuild": "npm run build",
         "railway-postbuild": "npm run build",
         "test:ux": "node test-ux.js",
-        "test:ux:headless": "node test-ux.js --headless"
+        "test:ux:headless": "node test-ux.js --headless",
+        "test:ux:advanced": "node advanced-ux-test.js",
+        "test:ux:all": "npm run test:ux && npm run test:ux:advanced"
     },
     "engines": {
         "node": ">=18.0.0",

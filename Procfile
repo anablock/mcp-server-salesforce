@@ -1,1 +1,1 @@
-web: npm run start:sso
+web: npm run start:sso-improved

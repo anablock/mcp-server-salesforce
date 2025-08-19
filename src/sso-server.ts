@@ -31,6 +31,9 @@ import { WRITE_APEX_TRIGGER, handleWriteApexTrigger, WriteApexTriggerArgs } from
 import { EXECUTE_ANONYMOUS, handleExecuteAnonymous, ExecuteAnonymousArgs } from "./tools/executeAnonymous.js";
 import { MANAGE_DEBUG_LOGS, handleManageDebugLogs, ManageDebugLogsArgs } from "./tools/manageDebugLogs.js";
 
+// Import natural language processor
+import { NaturalLanguageProcessor, NaturalLanguageRequest } from "./services/naturalLanguageProcessor.js";
+
 dotenv.config();
 
 const app = express();
@@ -65,6 +68,102 @@ const oauthConfig = {
 };
 
 const salesforceOAuth = new SalesforceOAuth(oauthConfig);
+
+// Initialize Natural Language Processor
+const nlProcessor = new NaturalLanguageProcessor();
+
+// Helper function to execute MCP tools
+async function executeTool(conn: any, toolName: string, args: any) {
+  let result;
+  
+  switch (toolName) {
+    case "salesforce_search_objects": {
+      const { searchPattern } = args as { searchPattern: string };
+      if (!searchPattern) throw new Error('searchPattern is required');
+      result = await handleSearchObjects(conn, searchPattern);
+      break;
+    }
+
+    case "salesforce_describe_object": {
+      const { objectName } = args as { objectName: string };
+      if (!objectName) throw new Error('objectName is required');
+      result = await handleDescribeObject(conn, objectName);
+      return { metadata: result };
+    }
+
+    case "salesforce_query_records": {
+      const queryArgs = args as Record<string, unknown>;
+      if (!queryArgs.objectName || !Array.isArray(queryArgs.fields)) {
+        throw new Error('objectName and fields array are required for query');
+      }
+      const validatedArgs: QueryArgs = {
+        objectName: queryArgs.objectName as string,
+        fields: queryArgs.fields as string[],
+        whereClause: queryArgs.whereClause as string | undefined,
+        orderBy: queryArgs.orderBy as string | undefined,
+        limit: queryArgs.limit as number | undefined
+      };
+      result = await handleQueryRecords(conn, validatedArgs);
+      
+      // Try to parse records from result
+      try {
+        if (typeof result === 'string') {
+          const parsed = JSON.parse(result);
+          return { records: parsed.records || parsed };
+        }
+        return { records: result };
+      } catch (parseError) {
+        return { records: [], rawResult: result };
+      }
+    }
+
+    case "salesforce_dml_records": {
+      const dmlArgs = args as Record<string, unknown>;
+      if (!dmlArgs.operation || !dmlArgs.objectName || !Array.isArray(dmlArgs.records)) {
+        throw new Error('operation, objectName, and records array are required for DML');
+      }
+      const validatedArgs: DMLArgs = {
+        operation: dmlArgs.operation as 'insert' | 'update' | 'delete' | 'upsert',
+        objectName: dmlArgs.objectName as string,
+        records: dmlArgs.records as Record<string, any>[],
+        externalIdField: dmlArgs.externalIdField as string | undefined
+      };
+      result = await handleDMLRecords(conn, validatedArgs);
+      break;
+    }
+
+    case "salesforce_write_apex_trigger": {
+      const triggerArgs = args as Record<string, unknown>;
+      const validatedArgs: WriteApexTriggerArgs = {
+        triggerName: triggerArgs.triggerName as string,
+        objectName: triggerArgs.objectName as string,
+        events: triggerArgs.events as string[],
+        body: triggerArgs.body as string,
+        apiVersion: triggerArgs.apiVersion as string | undefined
+      };
+      result = await handleWriteApexTrigger(conn, validatedArgs);
+      break;
+    }
+
+    case "salesforce_write_apex": {
+      const apexArgs = args as Record<string, unknown>;
+      const validatedArgs: WriteApexArgs = {
+        operation: apexArgs.operation as 'create' | 'update',
+        className: apexArgs.className as string,
+        body: apexArgs.body as string,
+        apiVersion: apexArgs.apiVersion as string | undefined
+      };
+      result = await handleWriteApex(conn, validatedArgs);
+      break;
+    }
+
+    // Add other tools as needed...
+    default:
+      throw new Error(`Tool ${toolName} not implemented in executeTool function`);
+  }
+
+  return { result };
+}
 
 // MCP Tools endpoint - List available tools for integration
 app.get('/mcp/tools', (req, res) => {
@@ -154,6 +253,88 @@ app.get('/mcp/tools', (req, res) => {
     documentation: `${baseUrl}/api/docs`,
     usage: `Call tools via POST ${baseUrl}/mcp/call with authentication`
   });
+});
+
+// Natural Language Processing endpoint
+app.post('/natural-language', async (req, res) => {
+  try {
+    const { request: userRequest, userId, conversationHistory } = req.body as NaturalLanguageRequest;
+    
+    if (!userRequest || typeof userRequest !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Request field is required and must be a string'
+      });
+    }
+
+    if (!userId || typeof userId !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'userId field is required and must be a string'
+      });
+    }
+
+    // Process the natural language request
+    const nlResponse = await nlProcessor.processNaturalLanguageRequest({
+      request: userRequest,
+      userId,
+      conversationHistory
+    });
+
+    // If the analysis was successful and we have a tool call, execute it
+    if (nlResponse.success && nlResponse.toolCall) {
+      try {
+        // Check if user has an active session for this userId
+        // For now, we'll use the session from the request
+        const sessionId = req.session.id;
+        
+        if (!sessionId) {
+          // Return the analysis without execution
+          return res.json({
+            ...nlResponse,
+            error: 'Authentication required - please complete OAuth flow first',
+            executionSkipped: true
+          });
+        }
+
+        // Get Salesforce connection
+        const conn = await createSessionSalesforceConnection(sessionId);
+        
+        // Execute the tool call
+        const toolResult = await executeTool(conn, nlResponse.toolCall.name, nlResponse.toolCall.arguments);
+        
+        // Return the analysis with execution results
+        return res.json({
+          ...nlResponse,
+          records: toolResult.records,
+          metadata: toolResult.metadata,
+          executionResult: toolResult
+        });
+
+      } catch (executionError) {
+        console.error('Tool execution error:', executionError);
+        
+        // Return the analysis with execution error
+        return res.json({
+          ...nlResponse,
+          executionError: executionError instanceof Error ? executionError.message : 'Tool execution failed'
+        });
+      }
+    }
+
+    // Return just the analysis if no tool call or analysis failed
+    return res.json(nlResponse);
+
+  } catch (error) {
+    console.error('Natural language processing error:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Natural language processing failed',
+      type: 'query',
+      intent: 'Error processing request',
+      executedAt: new Date().toISOString()
+    });
+  }
 });
 
 // Health check endpoint with enhanced metrics

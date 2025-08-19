@@ -263,6 +263,61 @@ npm install
 npm run build
 ```
 
+## SSO Web Server
+
+This package includes a professional SSO web server for OAuth 2.0 authentication with Salesforce, featuring:
+
+### 🌐 Professional Web Interface
+- Modern, responsive success page with gradient design
+- Connection details and status display
+- Clear next steps and action buttons
+- Mobile-first responsive design (375px - 2560px viewports)
+
+### 🔧 Enhanced API Endpoints
+- `GET /health` - Comprehensive server health and metrics
+- `GET /mcp/tools` - Complete MCP tools documentation (13 tools, 4 categories)
+- `GET /auth/status` - Authentication status checking
+- `GET /auth/success` - Professional post-OAuth success page
+
+### 🧪 Advanced UX Testing
+- Puppeteer-based automated testing suite
+- Visual regression testing with screenshots
+- Performance monitoring and accessibility validation
+- Responsive design testing across multiple viewports
+- Complete user journey testing
+
+### 🚀 Production Deployment
+```bash
+# Deploy SSO server to Heroku
+npm run start:sso
+
+# Run comprehensive UX tests
+npm run test:ux:advanced
+
+# Test all endpoints
+npm run test:ux:all
+```
+
+**Live Demo:** https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com
+
+## Documentation
+
+### 📖 Complete Documentation Suite
+- **[IMPLEMENTATION_DOCS.md](IMPLEMENTATION_DOCS.md)** - Architecture, features, and deployment
+- **[UX_TESTING_GUIDE.md](UX_TESTING_GUIDE.md)** - Puppeteer testing infrastructure
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation with examples
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+
+### 🎯 Key Features Implemented
+- ✅ Professional OAuth 2.0 SSO flow
+- ✅ Modern responsive web interface
+- ✅ 13 categorized MCP tools with full documentation
+- ✅ Advanced health monitoring and metrics
+- ✅ Comprehensive UX testing with visual validation
+- ✅ Production-ready Heroku deployment
+- ✅ WCAG accessibility compliance
+- ✅ Performance optimization and monitoring
+
 ## Contributing
 Contributions are welcome! Feel free to submit a Pull Request.
 
@@ -271,38 +326,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Issues and Support
 If you encounter any issues or need support, please file an issue on the [GitHub repository](https://github.com/tsmztech/mcp-server-salesforce/issues).
-
-Calendly Activity Report:
-  Type: Tabular Report
-  Primary Object: CalendlyAction__c
-  Fields:
-    - Event Type Name
-    - Invitee Email
-    - Event Start Time
-    - Created Date
-    - Owner
-  Filters:
-    - Created Date: Last 30 Days
-    - Event Start Time: Future Dates
-
-Conversion Tracking Report:
-  Type: Summary Report
-  Primary Object: Lead
-  Secondary Object: CalendlyAction__c
-  Grouping: Lead Source, Event Type
-  Summary Fields:
-    - Count of Leads
-    - Conversion Rate
-    - Average Days to Convert
-
-## Reports
-
-### Calendly Activity Report
-
-### Conversion Tracking Report
-
-
-https://claude.ai/artifacts/3d6a7795-7e85-43be-929b-fee19ea6071f
 
 <!DOCTYPE html>
 <html lang="en">

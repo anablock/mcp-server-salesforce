@@ -77,7 +77,7 @@ function loadConfig(): Config {
     
     sessionSecret: process.env.SESSION_SECRET,
     
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [],
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['https://notepad.ai', 'https://www.notepad.ai'],
     
     salesforce: {
       clientId: process.env.SALESFORCE_CLIENT_ID,

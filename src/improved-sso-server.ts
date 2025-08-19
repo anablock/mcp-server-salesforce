@@ -152,9 +152,19 @@ async function startServer() {
           req.session.regenerate(() => {});
         }
 
-        // Store return URL in session
+        // Store return URL in session (validate against allowed origins for security)
         if (returnUrl) {
-          (req.session as any).returnUrl = returnUrl;
+          const allowedOrigins = config.allowedOrigins;
+          const returnUrlObj = new URL(returnUrl);
+          const returnOrigin = `${returnUrlObj.protocol}//${returnUrlObj.host}`;
+          
+          if (allowedOrigins.includes(returnOrigin)) {
+            (req.session as any).returnUrl = returnUrl;
+            logger.info('Return URL stored in session', { returnUrl, userId });
+          } else {
+            logger.warn('Invalid return URL rejected', { returnUrl, allowedOrigins, userId });
+            // Still proceed but don't store the return URL
+          }
         }
 
         const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id);
