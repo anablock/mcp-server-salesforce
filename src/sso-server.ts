@@ -375,12 +375,12 @@ app.get('/auth/salesforce/login', (req, res) => {
     req.session.regenerate(() => {});
   }
 
-  // Store return URL in session
+  // Store return URL in session (backup) and pass to OAuth
   if (returnUrl) {
     (req.session as any).returnUrl = returnUrl;
   }
 
-  const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id);
+  const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id, returnUrl);
   res.redirect(authUrl);
 });
 
@@ -423,7 +423,7 @@ app.get('/auth/salesforce/callback', async (req, res) => {
     (req.session as any).salesforceOrgId = userInfo.organization_id;
 
     // Redirect to return URL or success page
-    const returnUrl = (req.session as any).returnUrl || '/auth/success';
+    const returnUrl = stateInfo.returnUrl || (req.session as any).returnUrl || '/auth/success';
     delete (req.session as any).returnUrl;
 
     const redirectUrl = `${returnUrl}?connected=true&org_id=${userInfo.organization_id}&connection_id=${connectionId}`;
