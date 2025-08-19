@@ -506,13 +506,126 @@ async function handleToolCall(name: string, args: any, conn: any) {
       return await handleDMLRecords(conn, validatedArgs);
     }
 
-    // ... (include all other tool handlers as in the original implementation)
+    case "salesforce_manage_object": {
+      const manageObjectArgs = args as Record<string, unknown>;
+      if (!manageObjectArgs.operation) {
+        throw new Error('operation is required for manage object');
+      }
+      const validatedArgs: ManageObjectArgs = {
+        operation: manageObjectArgs.operation as 'create' | 'delete' | 'describe',
+        objectName: manageObjectArgs.objectName as string | undefined,
+        objectDefinition: manageObjectArgs.objectDefinition as any
+      };
+      return await handleManageObject(conn, validatedArgs);
+    }
+
+    case "salesforce_manage_field": {
+      const manageFieldArgs = args as Record<string, unknown>;
+      if (!manageFieldArgs.operation || !manageFieldArgs.objectName) {
+        throw new Error('operation and objectName are required for manage field');
+      }
+      const validatedArgs: ManageFieldArgs = {
+        operation: manageFieldArgs.operation as 'create' | 'update' | 'delete',
+        objectName: manageFieldArgs.objectName as string,
+        fieldName: manageFieldArgs.fieldName as string | undefined,
+        fieldDefinition: manageFieldArgs.fieldDefinition as any
+      };
+      return await handleManageField(conn, validatedArgs);
+    }
+
+    case "salesforce_search_all": {
+      const searchAllArgs = args as Record<string, unknown>;
+      if (!searchAllArgs.searchTerm) {
+        throw new Error('searchTerm is required for search all');
+      }
+      const validatedArgs: SearchAllArgs = {
+        searchTerm: searchAllArgs.searchTerm as string,
+        objectTypes: searchAllArgs.objectTypes as string[] | undefined,
+        fieldsToReturn: searchAllArgs.fieldsToReturn as string[] | undefined,
+        whereClause: searchAllArgs.whereClause as string | undefined,
+        limit: searchAllArgs.limit as number | undefined,
+        withClause: searchAllArgs.withClause as WithClause | undefined
+      };
+      return await handleSearchAll(conn, validatedArgs);
+    }
+
+    case "salesforce_read_apex": {
+      const readApexArgs = args as Record<string, unknown>;
+      if (!readApexArgs.className) {
+        throw new Error('className is required for read apex');
+      }
+      const validatedArgs: ReadApexArgs = {
+        className: readApexArgs.className as string
+      };
+      return await handleReadApex(conn, validatedArgs);
+    }
+
+    case "salesforce_write_apex": {
+      const writeApexArgs = args as Record<string, unknown>;
+      if (!writeApexArgs.className || !writeApexArgs.apexCode) {
+        throw new Error('className and apexCode are required for write apex');
+      }
+      const validatedArgs: WriteApexArgs = {
+        className: writeApexArgs.className as string,
+        apexCode: writeApexArgs.apexCode as string
+      };
+      return await handleWriteApex(conn, validatedArgs);
+    }
+
+    case "salesforce_read_apex_trigger": {
+      const readTriggerArgs = args as Record<string, unknown>;
+      if (!readTriggerArgs.triggerName) {
+        throw new Error('triggerName is required for read apex trigger');
+      }
+      const validatedArgs: ReadApexTriggerArgs = {
+        triggerName: readTriggerArgs.triggerName as string
+      };
+      return await handleReadApexTrigger(conn, validatedArgs);
+    }
+
+    case "salesforce_write_apex_trigger": {
+      const writeTriggerArgs = args as Record<string, unknown>;
+      if (!writeTriggerArgs.triggerName || !writeTriggerArgs.triggerCode) {
+        throw new Error('triggerName and triggerCode are required for write apex trigger');
+      }
+      const validatedArgs: WriteApexTriggerArgs = {
+        triggerName: writeTriggerArgs.triggerName as string,
+        triggerCode: writeTriggerArgs.triggerCode as string,
+        objectName: writeTriggerArgs.objectName as string
+      };
+      return await handleWriteApexTrigger(conn, validatedArgs);
+    }
+
+    case "salesforce_execute_anonymous": {
+      const executeArgs = args as Record<string, unknown>;
+      if (!executeArgs.apexCode) {
+        throw new Error('apexCode is required for execute anonymous');
+      }
+      const validatedArgs: ExecuteAnonymousArgs = {
+        apexCode: executeArgs.apexCode as string
+      };
+      return await handleExecuteAnonymous(conn, validatedArgs);
+    }
+
+    case "salesforce_manage_debug_logs": {
+      const debugArgs = args as Record<string, unknown>;
+      if (!debugArgs.operation) {
+        throw new Error('operation is required for manage debug logs');
+      }
+      const validatedArgs: ManageDebugLogsArgs = {
+        operation: debugArgs.operation as 'list' | 'get' | 'delete',
+        logId: debugArgs.logId as string | undefined
+      };
+      return await handleManageDebugLogs(conn, validatedArgs);
+    }
 
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
 }
 
-<function_calls>
-<invoke name="TodoWrite">
-<parameter name="todos">[{"id": "improve-1", "content": "Add persistent token storage with database support", "status": "completed", "priority": "high"}, {"id": "improve-2", "content": "Implement token refresh middleware and error handling", "status": "completed", "priority": "high"}, {"id": "improve-3", "content": "Add rate limiting and security headers", "status": "completed", "priority": "high"}, {"id": "improve-4", "content": "Implement proper logging and monitoring", "status": "completed", "priority": "medium"}, {"id": "improve-5", "content": "Add health checks and graceful shutdown", "status": "completed", "priority": "medium"}, {"id": "improve-6", "content": "Improve error handling and user feedback", "status": "completed", "priority": "medium"}, {"id": "improve-7", "content": "Add configuration validation and environment checks", "status": "completed", "priority": "medium"}, {"id": "improve-8", "content": "Implement CSRF protection and security enhancements", "status": "completed", "priority": "low"}]
+// Start the server
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startServer();
+}
+
