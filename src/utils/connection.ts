@@ -1,5 +1,6 @@
 import jsforce from 'jsforce';
 import { ConnectionType, ConnectionConfig } from '../types/connection.js';
+import { tokenStore, UserConnection } from './tokenStore.js';
 import https from 'https';
 import querystring from 'querystring';
 
@@ -114,4 +115,48 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
     console.error('Error connecting to Salesforce:', error);
     throw error;
   }
+}
+
+/**
+ * Creates a Salesforce connection for a specific user using stored tokens
+ * @param userId User identifier
+ * @returns Connected jsforce Connection instance
+ */
+export async function createUserSalesforceConnection(userId: string): Promise<jsforce.Connection> {
+  const userConnection = tokenStore.getConnectionByUserId(userId);
+  
+  if (!userConnection) {
+    throw new Error(`No Salesforce connection found for user: ${userId}`);
+  }
+
+  const conn = new jsforce.Connection({
+    instanceUrl: userConnection.tokens.instanceUrl,
+    accessToken: userConnection.tokens.accessToken,
+    refreshToken: userConnection.tokens.refreshToken
+  });
+
+  // Set up automatic token refresh
+  conn.on('refresh', (accessToken: string, res: any) => {
+    tokenStore.updateTokens(userId, {
+      accessToken,
+      expiresAt: new Date(Date.now() + (res.expires_in * 1000))
+    });
+  });
+
+  return conn;
+}
+
+/**
+ * Creates a Salesforce connection for a specific session
+ * @param sessionId Session identifier
+ * @returns Connected jsforce Connection instance
+ */
+export async function createSessionSalesforceConnection(sessionId: string): Promise<jsforce.Connection> {
+  const userConnection = tokenStore.getConnectionBySession(sessionId);
+  
+  if (!userConnection) {
+    throw new Error(`No Salesforce connection found for session: ${sessionId}`);
+  }
+
+  return createUserSalesforceConnection(userConnection.userId);
 }
