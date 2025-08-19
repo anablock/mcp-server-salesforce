@@ -40,7 +40,7 @@ class SalesforceOAuth {
             return null;
         }
         this.pendingStates.delete(state);
-        return { userId: stateInfo.userId, sessionId: stateInfo.sessionId };
+        return { userId: stateInfo.userId, sessionId: stateInfo.sessionId, returnUrl: stateInfo.returnUrl };
     }
     // Exchange code for tokens
     async exchangeCodeForTokens(code) {

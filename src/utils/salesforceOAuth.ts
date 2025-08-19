@@ -49,7 +49,7 @@ export class SalesforceOAuth {
   }
 
   // Validate state and get user info
-  validateState(state: string): { userId: string; sessionId: string } | null {
+  validateState(state: string): { userId: string; sessionId: string; returnUrl?: string } | null {
     const stateInfo = this.pendingStates.get(state);
     if (!stateInfo) return null;
 
@@ -61,7 +61,7 @@ export class SalesforceOAuth {
     }
 
     this.pendingStates.delete(state);
-    return { userId: stateInfo.userId, sessionId: stateInfo.sessionId };
+    return { userId: stateInfo.userId, sessionId: stateInfo.sessionId, returnUrl: stateInfo.returnUrl };
   }
 
   // Exchange code for tokens
