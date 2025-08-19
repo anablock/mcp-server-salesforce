@@ -1,4 +1,8 @@
-export const MANAGE_FIELD = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MANAGE_FIELD = void 0;
+exports.handleManageField = handleManageField;
+exports.MANAGE_FIELD = {
     name: "salesforce_manage_field",
     description: `Create new custom fields or modify existing fields on any Salesforce object:
   - Field Types: Text, Number, Date, Lookup, Master-Detail, Picklist etc.
@@ -107,7 +111,7 @@ export const MANAGE_FIELD = {
         required: ["operation", "objectName", "fieldName"]
     }
 };
-export async function handleManageField(conn, args) {
+async function handleManageField(conn, args) {
     const { operation, objectName, fieldName, type, ...fieldProps } = args;
     try {
         if (operation === 'create') {

@@ -1,4 +1,8 @@
-export const QUERY_RECORDS = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.QUERY_RECORDS = void 0;
+exports.handleQueryRecords = handleQueryRecords;
+exports.QUERY_RECORDS = {
     name: "salesforce_query_records",
     description: `Query records from any Salesforce object using SOQL, including relationship queries.
 
@@ -103,7 +107,7 @@ function formatRelationshipResults(record, field, prefix = '') {
     }
     return `${prefix}${field}: ${value !== null && value !== undefined ? value : 'null'}`;
 }
-export async function handleQueryRecords(conn, args) {
+async function handleQueryRecords(conn, args) {
     const { objectName, fields, whereClause, orderBy, limit } = args;
     try {
         // Validate relationship field syntax

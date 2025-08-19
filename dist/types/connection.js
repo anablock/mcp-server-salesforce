@@ -1,7 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ConnectionType = void 0;
 /**
  * Enum representing the available Salesforce connection types
  */
-export var ConnectionType;
+var ConnectionType;
 (function (ConnectionType) {
     /**
      * Standard username/password authentication with security token
@@ -13,4 +16,4 @@ export var ConnectionType;
      * Requires SALESFORCE_CLIENT_ID and SALESFORCE_CLIENT_SECRET
      */
     ConnectionType["OAuth_2_0_Client_Credentials"] = "OAuth_2.0_Client_Credentials";
-})(ConnectionType || (ConnectionType = {}));
+})(ConnectionType || (exports.ConnectionType = ConnectionType = {}));

@@ -1,4 +1,8 @@
-export const MANAGE_OBJECT = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MANAGE_OBJECT = void 0;
+exports.handleManageObject = handleManageObject;
+exports.MANAGE_OBJECT = {
     name: "salesforce_manage_object",
     description: `Create new custom objects or modify existing ones in Salesforce:
   - Create: New custom objects with fields, relationships, and settings
@@ -56,7 +60,7 @@ export const MANAGE_OBJECT = {
         required: ["operation", "objectName"]
     }
 };
-export async function handleManageObject(conn, args) {
+async function handleManageObject(conn, args) {
     const { operation, objectName, label, pluralLabel, description, nameFieldLabel, nameFieldType, nameFieldFormat, sharingModel } = args;
     try {
         if (operation === 'create') {

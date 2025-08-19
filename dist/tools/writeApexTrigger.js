@@ -1,4 +1,8 @@
-export const WRITE_APEX_TRIGGER = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WRITE_APEX_TRIGGER = void 0;
+exports.handleWriteApexTrigger = handleWriteApexTrigger;
+exports.WRITE_APEX_TRIGGER = {
     name: "salesforce_write_apex_trigger",
     description: `Create or update Apex triggers in Salesforce.
   
@@ -62,7 +66,7 @@ Notes:
  * @param args Arguments for writing Apex triggers
  * @returns Tool response with operation result
  */
-export async function handleWriteApexTrigger(conn, args) {
+async function handleWriteApexTrigger(conn, args) {
     try {
         // Validate inputs
         if (!args.triggerName) {

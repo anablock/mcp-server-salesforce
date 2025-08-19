@@ -1,35 +1,73 @@
 #!/usr/bin/env node
-import express from 'express';
-import cors from 'cors';
-import session from 'express-session';
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
-import * as dotenv from "dotenv";
-import { createSalesforceConnection, createSessionSalesforceConnection } from "./utils/connection.js";
-import { SalesforceOAuth } from "./utils/salesforceOAuth.js";
-import { tokenStore } from "./utils/tokenStore.js";
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
+const express_session_1 = __importDefault(require("express-session"));
+const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
+const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
+const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
+const dotenv = __importStar(require("dotenv"));
+const connection_js_1 = require("./utils/connection.js");
+const salesforceOAuth_js_1 = require("./utils/salesforceOAuth.js");
+const tokenStore_js_1 = require("./utils/tokenStore.js");
 // Import all tool handlers
-import { SEARCH_OBJECTS, handleSearchObjects } from "./tools/search.js";
-import { DESCRIBE_OBJECT, handleDescribeObject } from "./tools/describe.js";
-import { QUERY_RECORDS, handleQueryRecords } from "./tools/query.js";
-import { DML_RECORDS, handleDMLRecords } from "./tools/dml.js";
-import { MANAGE_OBJECT, handleManageObject } from "./tools/manageObject.js";
-import { MANAGE_FIELD, handleManageField } from "./tools/manageField.js";
-import { SEARCH_ALL, handleSearchAll } from "./tools/searchAll.js";
-import { READ_APEX, handleReadApex } from "./tools/readApex.js";
-import { WRITE_APEX, handleWriteApex } from "./tools/writeApex.js";
-import { READ_APEX_TRIGGER, handleReadApexTrigger } from "./tools/readApexTrigger.js";
-import { WRITE_APEX_TRIGGER, handleWriteApexTrigger } from "./tools/writeApexTrigger.js";
-import { EXECUTE_ANONYMOUS, handleExecuteAnonymous } from "./tools/executeAnonymous.js";
-import { MANAGE_DEBUG_LOGS, handleManageDebugLogs } from "./tools/manageDebugLogs.js";
+const search_js_1 = require("./tools/search.js");
+const describe_js_1 = require("./tools/describe.js");
+const query_js_1 = require("./tools/query.js");
+const dml_js_1 = require("./tools/dml.js");
+const manageObject_js_1 = require("./tools/manageObject.js");
+const manageField_js_1 = require("./tools/manageField.js");
+const searchAll_js_1 = require("./tools/searchAll.js");
+const readApex_js_1 = require("./tools/readApex.js");
+const writeApex_js_1 = require("./tools/writeApex.js");
+const readApexTrigger_js_1 = require("./tools/readApexTrigger.js");
+const writeApexTrigger_js_1 = require("./tools/writeApexTrigger.js");
+const executeAnonymous_js_1 = require("./tools/executeAnonymous.js");
+const manageDebugLogs_js_1 = require("./tools/manageDebugLogs.js");
 // Import natural language processor
-import { NaturalLanguageProcessor } from "./services/naturalLanguageProcessor.js";
+const naturalLanguageProcessor_js_1 = require("./services/naturalLanguageProcessor.js");
 dotenv.config();
-const app = express();
+const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 // Session configuration
-app.use(session({
+app.use((0, express_session_1.default)({
     secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
     resave: false,
     saveUninitialized: false,
@@ -39,12 +77,12 @@ app.use(session({
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));
-app.use(cors({
+app.use((0, cors_1.default)({
     origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'https://notepad.ai'],
     credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express_1.default.json());
+app.use(express_1.default.urlencoded({ extended: true }));
 // Initialize Salesforce OAuth
 const oauthConfig = {
     clientId: process.env.SALESFORCE_CLIENT_ID,
@@ -52,9 +90,9 @@ const oauthConfig = {
     redirectUri: process.env.SALESFORCE_REDIRECT_URI || `${process.env.BASE_URL || 'http://localhost:3000'}/auth/salesforce/callback`,
     loginUrl: process.env.SALESFORCE_LOGIN_URL || 'https://login.salesforce.com'
 };
-const salesforceOAuth = new SalesforceOAuth(oauthConfig);
+const salesforceOAuth = new salesforceOAuth_js_1.SalesforceOAuth(oauthConfig);
 // Initialize Natural Language Processor
-const nlProcessor = new NaturalLanguageProcessor();
+const nlProcessor = new naturalLanguageProcessor_js_1.NaturalLanguageProcessor();
 // Helper function to execute MCP tools
 async function executeTool(conn, toolName, args) {
     let result;
@@ -63,14 +101,14 @@ async function executeTool(conn, toolName, args) {
             const { searchPattern } = args;
             if (!searchPattern)
                 throw new Error('searchPattern is required');
-            result = await handleSearchObjects(conn, searchPattern);
+            result = await (0, search_js_1.handleSearchObjects)(conn, searchPattern);
             break;
         }
         case "salesforce_describe_object": {
             const { objectName } = args;
             if (!objectName)
                 throw new Error('objectName is required');
-            result = await handleDescribeObject(conn, objectName);
+            result = await (0, describe_js_1.handleDescribeObject)(conn, objectName);
             return { metadata: result };
         }
         case "salesforce_query_records": {
@@ -85,7 +123,7 @@ async function executeTool(conn, toolName, args) {
                 orderBy: queryArgs.orderBy,
                 limit: queryArgs.limit
             };
-            result = await handleQueryRecords(conn, validatedArgs);
+            result = await (0, query_js_1.handleQueryRecords)(conn, validatedArgs);
             // Try to parse records from result
             try {
                 if (typeof result === 'string') {
@@ -109,7 +147,7 @@ async function executeTool(conn, toolName, args) {
                 records: dmlArgs.records,
                 externalIdField: dmlArgs.externalIdField
             };
-            result = await handleDMLRecords(conn, validatedArgs);
+            result = await (0, dml_js_1.handleDMLRecords)(conn, validatedArgs);
             break;
         }
         case "salesforce_write_apex_trigger": {
@@ -121,7 +159,7 @@ async function executeTool(conn, toolName, args) {
                 body: triggerArgs.body,
                 apiVersion: triggerArgs.apiVersion
             };
-            result = await handleWriteApexTrigger(conn, validatedArgs);
+            result = await (0, writeApexTrigger_js_1.handleWriteApexTrigger)(conn, validatedArgs);
             break;
         }
         case "salesforce_write_apex": {
@@ -132,7 +170,7 @@ async function executeTool(conn, toolName, args) {
                 body: apexArgs.body,
                 apiVersion: apexArgs.apiVersion
             };
-            result = await handleWriteApex(conn, validatedArgs);
+            result = await (0, writeApex_js_1.handleWriteApex)(conn, validatedArgs);
             break;
         }
         // Add other tools as needed...
@@ -266,7 +304,7 @@ app.post('/natural-language', async (req, res) => {
                     });
                 }
                 // Get Salesforce connection
-                const conn = await createSessionSalesforceConnection(sessionId);
+                const conn = await (0, connection_js_1.createSessionSalesforceConnection)(sessionId);
                 // Execute the tool call
                 const toolResult = await executeTool(conn, nlResponse.toolCall.name, nlResponse.toolCall.arguments);
                 // Return the analysis with execution results
@@ -317,8 +355,8 @@ app.get('/health', (req, res) => {
             unit: 'MB'
         },
         connections: {
-            active: tokenStore.getActiveConnections().length,
-            total: tokenStore.getActiveConnections().length
+            active: tokenStore_js_1.tokenStore.getActiveConnections().length,
+            total: tokenStore_js_1.tokenStore.getActiveConnections().length
         }
     });
 });
@@ -333,11 +371,11 @@ app.get('/auth/salesforce/login', (req, res) => {
     if (!req.session.id) {
         req.session.regenerate(() => { });
     }
-    // Store return URL in session
+    // Store return URL in session (backup) and pass to OAuth
     if (returnUrl) {
         req.session.returnUrl = returnUrl;
     }
-    const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id);
+    const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id, returnUrl);
     res.redirect(authUrl);
 });
 app.get('/auth/salesforce/callback', async (req, res) => {
@@ -357,7 +395,7 @@ app.get('/auth/salesforce/callback', async (req, res) => {
         // Exchange code for tokens
         const tokenData = await salesforceOAuth.exchangeCodeForTokens(code);
         // Store tokens in token store
-        const connectionId = tokenStore.storeConnection(stateInfo.userId, stateInfo.sessionId, {
+        const connectionId = tokenStore_js_1.tokenStore.storeConnection(stateInfo.userId, stateInfo.sessionId, {
             accessToken: tokenData.access_token,
             refreshToken: tokenData.refresh_token,
             instanceUrl: tokenData.instance_url,
@@ -371,7 +409,7 @@ app.get('/auth/salesforce/callback', async (req, res) => {
         req.session.salesforceUserId = userInfo.user_id;
         req.session.salesforceOrgId = userInfo.organization_id;
         // Redirect to return URL or success page
-        const returnUrl = req.session.returnUrl || '/auth/success';
+        const returnUrl = stateInfo.returnUrl || req.session.returnUrl || '/auth/success';
         delete req.session.returnUrl;
         const redirectUrl = `${returnUrl}?connected=true&org_id=${userInfo.organization_id}&connection_id=${connectionId}`;
         res.redirect(redirectUrl);
@@ -387,7 +425,7 @@ app.get('/auth/salesforce/callback', async (req, res) => {
 app.post('/auth/salesforce/logout', (req, res) => {
     const userId = req.session.userId;
     if (userId) {
-        tokenStore.removeConnection(userId);
+        tokenStore_js_1.tokenStore.removeConnection(userId);
     }
     req.session.destroy(() => {
         res.json({ success: true, message: 'Logged out successfully' });
@@ -398,8 +436,8 @@ app.get('/auth/status', (req, res) => {
     if (!userId) {
         return res.json({ connected: false });
     }
-    const hasConnection = tokenStore.hasActiveConnection(userId);
-    const connection = tokenStore.getConnectionByUserId(userId);
+    const hasConnection = tokenStore_js_1.tokenStore.hasActiveConnection(userId);
+    const connection = tokenStore_js_1.tokenStore.getConnectionByUserId(userId);
     res.json({
         connected: hasConnection,
         userId: userId,
@@ -580,7 +618,7 @@ app.post('/mcp/call', async (req, res) => {
             return res.status(400).json({ error: 'Arguments are required' });
         }
         // Get connection for this session
-        const conn = await createSessionSalesforceConnection(sessionId);
+        const conn = await (0, connection_js_1.createSessionSalesforceConnection)(sessionId);
         // Handle tool calls (same logic as stdio server)
         let result;
         switch (name) {
@@ -588,14 +626,14 @@ app.post('/mcp/call', async (req, res) => {
                 const { searchPattern } = args;
                 if (!searchPattern)
                     throw new Error('searchPattern is required');
-                result = await handleSearchObjects(conn, searchPattern);
+                result = await (0, search_js_1.handleSearchObjects)(conn, searchPattern);
                 break;
             }
             case "salesforce_describe_object": {
                 const { objectName } = args;
                 if (!objectName)
                     throw new Error('objectName is required');
-                result = await handleDescribeObject(conn, objectName);
+                result = await (0, describe_js_1.handleDescribeObject)(conn, objectName);
                 break;
             }
             case "salesforce_query_records": {
@@ -610,7 +648,7 @@ app.post('/mcp/call', async (req, res) => {
                     orderBy: queryArgs.orderBy,
                     limit: queryArgs.limit
                 };
-                result = await handleQueryRecords(conn, validatedArgs);
+                result = await (0, query_js_1.handleQueryRecords)(conn, validatedArgs);
                 break;
             }
             case "salesforce_dml_records": {
@@ -624,7 +662,7 @@ app.post('/mcp/call', async (req, res) => {
                     records: dmlArgs.records,
                     externalIdField: dmlArgs.externalIdField
                 };
-                result = await handleDMLRecords(conn, validatedArgs);
+                result = await (0, dml_js_1.handleDMLRecords)(conn, validatedArgs);
                 break;
             }
             case "salesforce_manage_object": {
@@ -643,7 +681,7 @@ app.post('/mcp/call', async (req, res) => {
                     nameFieldFormat: objectArgs.nameFieldFormat,
                     sharingModel: objectArgs.sharingModel
                 };
-                result = await handleManageObject(conn, validatedArgs);
+                result = await (0, manageObject_js_1.handleManageObject)(conn, validatedArgs);
                 break;
             }
             case "salesforce_manage_field": {
@@ -670,7 +708,7 @@ app.post('/mcp/call', async (req, res) => {
                     picklistValues: fieldArgs.picklistValues,
                     description: fieldArgs.description
                 };
-                result = await handleManageField(conn, validatedArgs);
+                result = await (0, manageField_js_1.handleManageField)(conn, validatedArgs);
                 break;
             }
             case "salesforce_search_all": {
@@ -696,7 +734,7 @@ app.post('/mcp/call', async (req, res) => {
                     updateable: searchArgs.updateable,
                     viewable: searchArgs.viewable
                 };
-                result = await handleSearchAll(conn, validatedArgs);
+                result = await (0, searchAll_js_1.handleSearchAll)(conn, validatedArgs);
                 break;
             }
             case "salesforce_read_apex": {
@@ -706,7 +744,7 @@ app.post('/mcp/call', async (req, res) => {
                     namePattern: apexArgs.namePattern,
                     includeMetadata: apexArgs.includeMetadata
                 };
-                result = await handleReadApex(conn, validatedArgs);
+                result = await (0, readApex_js_1.handleReadApex)(conn, validatedArgs);
                 break;
             }
             case "salesforce_write_apex": {
@@ -720,7 +758,7 @@ app.post('/mcp/call', async (req, res) => {
                     apiVersion: apexArgs.apiVersion,
                     body: apexArgs.body
                 };
-                result = await handleWriteApex(conn, validatedArgs);
+                result = await (0, writeApex_js_1.handleWriteApex)(conn, validatedArgs);
                 break;
             }
             case "salesforce_read_apex_trigger": {
@@ -730,7 +768,7 @@ app.post('/mcp/call', async (req, res) => {
                     namePattern: triggerArgs.namePattern,
                     includeMetadata: triggerArgs.includeMetadata
                 };
-                result = await handleReadApexTrigger(conn, validatedArgs);
+                result = await (0, readApexTrigger_js_1.handleReadApexTrigger)(conn, validatedArgs);
                 break;
             }
             case "salesforce_write_apex_trigger": {
@@ -745,7 +783,7 @@ app.post('/mcp/call', async (req, res) => {
                     apiVersion: triggerArgs.apiVersion,
                     body: triggerArgs.body
                 };
-                result = await handleWriteApexTrigger(conn, validatedArgs);
+                result = await (0, writeApexTrigger_js_1.handleWriteApexTrigger)(conn, validatedArgs);
                 break;
             }
             case "salesforce_execute_anonymous": {
@@ -757,7 +795,7 @@ app.post('/mcp/call', async (req, res) => {
                     apexCode: executeArgs.apexCode,
                     logLevel: executeArgs.logLevel
                 };
-                result = await handleExecuteAnonymous(conn, validatedArgs);
+                result = await (0, executeAnonymous_js_1.handleExecuteAnonymous)(conn, validatedArgs);
                 break;
             }
             case "salesforce_manage_debug_logs": {
@@ -774,7 +812,7 @@ app.post('/mcp/call', async (req, res) => {
                     logId: debugLogsArgs.logId,
                     includeBody: debugLogsArgs.includeBody
                 };
-                result = await handleManageDebugLogs(conn, validatedArgs);
+                result = await (0, manageDebugLogs_js_1.handleManageDebugLogs)(conn, validatedArgs);
                 break;
             }
             default:
@@ -797,7 +835,7 @@ app.listen(PORT, () => {
     console.error(`Health check: http://localhost:${PORT}/health`);
 });
 // Also provide stdio MCP server for direct Claude integration
-const mcpServer = new Server({
+const mcpServer = new index_js_1.Server({
     name: "salesforce-mcp-sso-server",
     version: "1.0.0",
 }, {
@@ -806,30 +844,30 @@ const mcpServer = new Server({
     },
 });
 // Tool handlers (same as original)
-mcpServer.setRequestHandler(ListToolsRequestSchema, async () => ({
+mcpServer.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => ({
     tools: [
-        SEARCH_OBJECTS,
-        DESCRIBE_OBJECT,
-        QUERY_RECORDS,
-        DML_RECORDS,
-        MANAGE_OBJECT,
-        MANAGE_FIELD,
-        SEARCH_ALL,
-        READ_APEX,
-        WRITE_APEX,
-        READ_APEX_TRIGGER,
-        WRITE_APEX_TRIGGER,
-        EXECUTE_ANONYMOUS,
-        MANAGE_DEBUG_LOGS
+        search_js_1.SEARCH_OBJECTS,
+        describe_js_1.DESCRIBE_OBJECT,
+        query_js_1.QUERY_RECORDS,
+        dml_js_1.DML_RECORDS,
+        manageObject_js_1.MANAGE_OBJECT,
+        manageField_js_1.MANAGE_FIELD,
+        searchAll_js_1.SEARCH_ALL,
+        readApex_js_1.READ_APEX,
+        writeApex_js_1.WRITE_APEX,
+        readApexTrigger_js_1.READ_APEX_TRIGGER,
+        writeApexTrigger_js_1.WRITE_APEX_TRIGGER,
+        executeAnonymous_js_1.EXECUTE_ANONYMOUS,
+        manageDebugLogs_js_1.MANAGE_DEBUG_LOGS
     ],
 }));
-mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
+mcpServer.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
     try {
         const { name, arguments: args } = request.params;
         if (!args)
             throw new Error('Arguments are required');
         // For stdio mode, use default connection
-        const conn = await createSalesforceConnection();
+        const conn = await (0, connection_js_1.createSalesforceConnection)();
         // Same tool handling logic as HTTP endpoints...
         // (Implementation would be identical to the HTTP version above)
         // For brevity, using the original connection method for stdio mode
@@ -847,7 +885,7 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Only start stdio server if not in HTTP mode
 if (process.env.MCP_MODE !== 'http') {
     async function runStdioServer() {
-        const transport = new StdioServerTransport();
+        const transport = new stdio_js_1.StdioServerTransport();
         await mcpServer.connect(transport);
         console.error("Salesforce MCP Server (stdio) also available");
     }

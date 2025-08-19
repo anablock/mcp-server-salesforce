@@ -1,4 +1,8 @@
-export const SEARCH_ALL = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SEARCH_ALL = void 0;
+exports.handleSearchAll = handleSearchAll;
+exports.SEARCH_ALL = {
     name: "salesforce_search_all",
     description: `Search across multiple Salesforce objects using SOSL (Salesforce Object Search Language).
   
@@ -139,7 +143,7 @@ function buildWithClause(withClause) {
             return '';
     }
 }
-export async function handleSearchAll(conn, args) {
+async function handleSearchAll(conn, args) {
     const { searchTerm, searchIn = "ALL FIELDS", objects, withClauses, updateable, viewable } = args;
     try {
         // Validate the search term

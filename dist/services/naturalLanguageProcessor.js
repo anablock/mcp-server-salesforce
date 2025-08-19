@@ -1,5 +1,11 @@
-import fetch from 'node-fetch';
-export class NaturalLanguageProcessor {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NaturalLanguageProcessor = void 0;
+const node_fetch_1 = __importDefault(require("node-fetch"));
+class NaturalLanguageProcessor {
     constructor() {
         this.claudeApiKey = process.env.ANTHROPIC_API_KEY || '';
         if (!this.claudeApiKey) {
@@ -120,7 +126,7 @@ Analyze this request and provide the structured JSON response.`;
         }
     }
     async callClaudeAPI(systemPrompt, userPrompt) {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await (0, node_fetch_1.default)('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -233,3 +239,4 @@ Analyze this request and provide the structured JSON response.`;
         };
     }
 }
+exports.NaturalLanguageProcessor = NaturalLanguageProcessor;
