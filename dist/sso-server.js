@@ -156,8 +156,8 @@ app.get('/health', (req, res) => {
             unit: 'MB'
         },
         connections: {
-            active: Object.keys(tokenStore.getActiveConnections()).length,
-            total: tokenStore.getAllConnections().length
+            active: tokenStore.getActiveConnections().length,
+            total: tokenStore.getActiveConnections().length
         }
     });
 });
