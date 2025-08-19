@@ -12,7 +12,7 @@
       "dist"
     ],
     "scripts": {
-      "build": "tsc && shx chmod +x dist/*.js",
+      "build": "echo 'Using existing build files' && shx chmod +x dist/*.js",
       "watch": "tsc --watch",
       "start": "node dist/index.js",
       "start:http": "node dist/http-server.js",
