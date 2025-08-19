@@ -514,7 +514,12 @@ async function handleToolCall(name: string, args: any, conn: any) {
       const validatedArgs: ManageObjectArgs = {
         operation: manageObjectArgs.operation as 'create' | 'update',
         objectName: manageObjectArgs.objectName as string,
-        objectDefinition: manageObjectArgs.objectDefinition as any
+        label: manageObjectArgs.label as string | undefined,
+        pluralLabel: manageObjectArgs.pluralLabel as string | undefined,
+        description: manageObjectArgs.description as string | undefined,
+        nameFieldLabel: manageObjectArgs.nameFieldLabel as string | undefined,
+        nameFieldType: manageObjectArgs.nameFieldType as 'Text' | 'AutoNumber' | undefined,
+        sharingModel: manageObjectArgs.sharingModel as 'ReadWrite' | 'Read' | 'Private' | 'ControlledByParent' | undefined
       };
       return await handleManageObject(conn, validatedArgs);
     }
@@ -528,7 +533,15 @@ async function handleToolCall(name: string, args: any, conn: any) {
         operation: manageFieldArgs.operation as 'create' | 'update',
         objectName: manageFieldArgs.objectName as string,
         fieldName: manageFieldArgs.fieldName as string,
-        fieldDefinition: manageFieldArgs.fieldDefinition as any
+        label: manageFieldArgs.label as string | undefined,
+        type: manageFieldArgs.type as string | undefined,
+        required: manageFieldArgs.required as boolean | undefined,
+        unique: manageFieldArgs.unique as boolean | undefined,
+        externalId: manageFieldArgs.externalId as boolean | undefined,
+        length: manageFieldArgs.length as number | undefined,
+        precision: manageFieldArgs.precision as number | undefined,
+        scale: manageFieldArgs.scale as number | undefined,
+        referenceTo: manageFieldArgs.referenceTo as string | undefined
       };
       return await handleManageField(conn, validatedArgs);
     }
@@ -540,8 +553,8 @@ async function handleToolCall(name: string, args: any, conn: any) {
       }
       const validatedArgs: SearchAllArgs = {
         searchTerm: searchAllArgs.searchTerm as string,
-        objects: searchAllArgs.objects as any[] | undefined,
-        searchIn: searchAllArgs.searchIn as string | undefined,
+        objects: (searchAllArgs.objects as any[] || []) as SearchAllArgs['objects'],
+        searchIn: searchAllArgs.searchIn as SearchAllArgs['searchIn'],
         withClauses: searchAllArgs.withClauses as WithClause[] | undefined
       };
       return await handleSearchAll(conn, validatedArgs);
@@ -560,12 +573,14 @@ async function handleToolCall(name: string, args: any, conn: any) {
 
     case "salesforce_write_apex": {
       const writeApexArgs = args as Record<string, unknown>;
-      if (!writeApexArgs.className || !writeApexArgs.apexCode) {
-        throw new Error('className and apexCode are required for write apex');
+      if (!writeApexArgs.operation || !writeApexArgs.className || !writeApexArgs.body) {
+        throw new Error('operation, className and body are required for write apex');
       }
       const validatedArgs: WriteApexArgs = {
+        operation: writeApexArgs.operation as 'create' | 'update',
         className: writeApexArgs.className as string,
-        body: writeApexArgs.apexCode as string
+        body: writeApexArgs.body as string,
+        apiVersion: writeApexArgs.apiVersion as string | undefined
       };
       return await handleWriteApex(conn, validatedArgs);
     }
@@ -583,13 +598,15 @@ async function handleToolCall(name: string, args: any, conn: any) {
 
     case "salesforce_write_apex_trigger": {
       const writeTriggerArgs = args as Record<string, unknown>;
-      if (!writeTriggerArgs.triggerName || !writeTriggerArgs.triggerCode) {
-        throw new Error('triggerName and triggerCode are required for write apex trigger');
+      if (!writeTriggerArgs.operation || !writeTriggerArgs.triggerName || !writeTriggerArgs.body) {
+        throw new Error('operation, triggerName and body are required for write apex trigger');
       }
       const validatedArgs: WriteApexTriggerArgs = {
+        operation: writeTriggerArgs.operation as 'create' | 'update',
         triggerName: writeTriggerArgs.triggerName as string,
-        body: writeTriggerArgs.triggerCode as string,
-        objectName: writeTriggerArgs.objectName as string
+        body: writeTriggerArgs.body as string,
+        objectName: writeTriggerArgs.objectName as string,
+        apiVersion: writeTriggerArgs.apiVersion as string | undefined
       };
       return await handleWriteApexTrigger(conn, validatedArgs);
     }
@@ -607,13 +624,13 @@ async function handleToolCall(name: string, args: any, conn: any) {
 
     case "salesforce_manage_debug_logs": {
       const debugArgs = args as Record<string, unknown>;
-      if (!debugArgs.operation) {
-        throw new Error('operation is required for manage debug logs');
+      if (!debugArgs.operation || !debugArgs.username) {
+        throw new Error('operation and username are required for manage debug logs');
       }
       const validatedArgs: ManageDebugLogsArgs = {
         operation: debugArgs.operation as 'enable' | 'disable' | 'retrieve',
-        username: debugArgs.username as string | undefined,
-        logLevel: debugArgs.logLevel as string | undefined,
+        username: debugArgs.username as string,
+        logLevel: debugArgs.logLevel as ManageDebugLogsArgs['logLevel'],
         expirationTime: debugArgs.expirationTime as number | undefined
       };
       return await handleManageDebugLogs(conn, validatedArgs);
