@@ -409,9 +409,13 @@ app.get('/auth/salesforce/callback', async (req, res) => {
         req.session.salesforceUserId = userInfo.user_id;
         req.session.salesforceOrgId = userInfo.organization_id;
         // Redirect to return URL or success page
+        console.log('DEBUG: stateInfo.returnUrl =', stateInfo.returnUrl);
+        console.log('DEBUG: req.session.returnUrl =', req.session.returnUrl);
         const returnUrl = stateInfo.returnUrl || req.session.returnUrl || '/auth/success';
+        console.log('DEBUG: final returnUrl =', returnUrl);
         delete req.session.returnUrl;
         const redirectUrl = `${returnUrl}?connected=true&org_id=${userInfo.organization_id}&connection_id=${connectionId}`;
+        console.log('DEBUG: redirectUrl =', redirectUrl);
         res.redirect(redirectUrl);
     }
     catch (error) {
