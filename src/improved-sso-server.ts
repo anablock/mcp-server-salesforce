@@ -512,8 +512,8 @@ async function handleToolCall(name: string, args: any, conn: any) {
         throw new Error('operation is required for manage object');
       }
       const validatedArgs: ManageObjectArgs = {
-        operation: manageObjectArgs.operation as 'create' | 'delete' | 'describe',
-        objectName: manageObjectArgs.objectName as string | undefined,
+        operation: manageObjectArgs.operation as 'create' | 'update',
+        objectName: manageObjectArgs.objectName as string,
         objectDefinition: manageObjectArgs.objectDefinition as any
       };
       return await handleManageObject(conn, validatedArgs);
@@ -525,9 +525,9 @@ async function handleToolCall(name: string, args: any, conn: any) {
         throw new Error('operation and objectName are required for manage field');
       }
       const validatedArgs: ManageFieldArgs = {
-        operation: manageFieldArgs.operation as 'create' | 'update' | 'delete',
+        operation: manageFieldArgs.operation as 'create' | 'update',
         objectName: manageFieldArgs.objectName as string,
-        fieldName: manageFieldArgs.fieldName as string | undefined,
+        fieldName: manageFieldArgs.fieldName as string,
         fieldDefinition: manageFieldArgs.fieldDefinition as any
       };
       return await handleManageField(conn, validatedArgs);
@@ -540,11 +540,9 @@ async function handleToolCall(name: string, args: any, conn: any) {
       }
       const validatedArgs: SearchAllArgs = {
         searchTerm: searchAllArgs.searchTerm as string,
-        objectTypes: searchAllArgs.objectTypes as string[] | undefined,
-        fieldsToReturn: searchAllArgs.fieldsToReturn as string[] | undefined,
-        whereClause: searchAllArgs.whereClause as string | undefined,
-        limit: searchAllArgs.limit as number | undefined,
-        withClause: searchAllArgs.withClause as WithClause | undefined
+        objects: searchAllArgs.objects as any[] | undefined,
+        searchIn: searchAllArgs.searchIn as string | undefined,
+        withClauses: searchAllArgs.withClauses as WithClause[] | undefined
       };
       return await handleSearchAll(conn, validatedArgs);
     }
@@ -567,7 +565,7 @@ async function handleToolCall(name: string, args: any, conn: any) {
       }
       const validatedArgs: WriteApexArgs = {
         className: writeApexArgs.className as string,
-        apexCode: writeApexArgs.apexCode as string
+        body: writeApexArgs.apexCode as string
       };
       return await handleWriteApex(conn, validatedArgs);
     }
@@ -590,7 +588,7 @@ async function handleToolCall(name: string, args: any, conn: any) {
       }
       const validatedArgs: WriteApexTriggerArgs = {
         triggerName: writeTriggerArgs.triggerName as string,
-        triggerCode: writeTriggerArgs.triggerCode as string,
+        body: writeTriggerArgs.triggerCode as string,
         objectName: writeTriggerArgs.objectName as string
       };
       return await handleWriteApexTrigger(conn, validatedArgs);
@@ -613,8 +611,10 @@ async function handleToolCall(name: string, args: any, conn: any) {
         throw new Error('operation is required for manage debug logs');
       }
       const validatedArgs: ManageDebugLogsArgs = {
-        operation: debugArgs.operation as 'list' | 'get' | 'delete',
-        logId: debugArgs.logId as string | undefined
+        operation: debugArgs.operation as 'enable' | 'disable' | 'retrieve',
+        username: debugArgs.username as string | undefined,
+        logLevel: debugArgs.logLevel as string | undefined,
+        expirationTime: debugArgs.expirationTime as number | undefined
       };
       return await handleManageDebugLogs(conn, validatedArgs);
     }
