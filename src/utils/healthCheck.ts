@@ -26,6 +26,10 @@ export interface HealthCheckResult {
 class HealthChecker {
   private startTime: number;
 
+  public getStartTime(): number {
+    return this.startTime;
+  }
+
   constructor() {
     this.startTime = Date.now();
   }
@@ -244,7 +248,7 @@ export function pingHandler(req: Request, res: Response) {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    uptime: Date.now() - healthChecker.startTime
+    uptime: Date.now() - healthChecker.getStartTime()
   });
 }
 
@@ -277,7 +281,7 @@ export function livenessHandler(req: Request, res: Response) {
   res.json({
     alive: true,
     timestamp: new Date().toISOString(),
-    uptime: Date.now() - healthChecker.startTime
+    uptime: Date.now() - healthChecker.getStartTime()
   });
 }
 

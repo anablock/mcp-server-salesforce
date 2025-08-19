@@ -1,5 +1,5 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
-import type { Connection } from "jsforce";
+import jsforce from "jsforce";
 
 export const EXECUTE_ANONYMOUS: Tool = {
   name: "salesforce_execute_anonymous",

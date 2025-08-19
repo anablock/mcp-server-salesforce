@@ -73,7 +73,7 @@ export async function createSalesforceConnection(config) {
                 req.end();
             });
             // Create connection with the access token
-            const conn = new jsforce.Connection({
+            const conn = new jsforce({
                 instanceUrl: tokenResponse.instance_url,
                 accessToken: tokenResponse.access_token
             });
@@ -89,7 +89,7 @@ export async function createSalesforceConnection(config) {
             }
             console.error('Connecting to Salesforce using Username/Password authentication');
             // Create connection with login URL
-            const conn = new jsforce.Connection({ loginUrl });
+            const conn = new jsforce({ loginUrl });
             await conn.login(username, password + (token || ''));
             return conn;
         }
@@ -109,7 +109,7 @@ export async function createUserSalesforceConnection(userId) {
     if (!userConnection) {
         throw new Error(`No Salesforce connection found for user: ${userId}`);
     }
-    const conn = new jsforce.Connection({
+    const conn = new jsforce({
         instanceUrl: userConnection.tokens.instanceUrl,
         accessToken: userConnection.tokens.accessToken,
         refreshToken: userConnection.tokens.refreshToken

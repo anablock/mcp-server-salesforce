@@ -154,7 +154,7 @@ async function startServer() {
 
         // Store return URL in session
         if (returnUrl) {
-          req.session.returnUrl = returnUrl;
+          (req.session as any).returnUrl = returnUrl;
         }
 
         const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id);
@@ -222,9 +222,9 @@ async function startServer() {
         const userInfo = await salesforceOAuth.getUserInfo(tokenData.access_token, tokenData.instance_url);
 
         // Store user info in session
-        req.session.userId = stateInfo.userId;
-        req.session.salesforceUserId = userInfo.user_id;
-        req.session.salesforceOrgId = userInfo.organization_id;
+        (req.session as any).userId = stateInfo.userId;
+        (req.session as any).salesforceUserId = userInfo.user_id;
+        (req.session as any).salesforceOrgId = userInfo.organization_id;
 
         auditLogger.loginAttempt(stateInfo.userId, true, req);
         logger.info('OAuth callback successful', {
@@ -234,8 +234,8 @@ async function startServer() {
         });
 
         // Redirect to return URL or success page
-        const returnUrl = req.session.returnUrl || '/auth/success';
-        delete req.session.returnUrl;
+        const returnUrl = (req.session as any).returnUrl || '/auth/success';
+        delete (req.session as any).returnUrl;
 
         const redirectUrl = `${returnUrl}?connected=true&org_id=${userInfo.organization_id}&connection_id=${connectionId}`;
         res.redirect(redirectUrl);
@@ -288,7 +288,7 @@ async function startServer() {
         res.json({
           connected: hasConnection,
           userId: userId,
-          salesforceOrgId: req.session.salesforceOrgId,
+          salesforceOrgId: (req.session as any).salesforceOrgId,
           instanceUrl: connection?.tokens.instanceUrl,
           lastUsed: connection?.lastUsed
         });
@@ -304,7 +304,7 @@ async function startServer() {
     // CSRF token endpoint
     app.get('/auth/csrf', (req, res) => {
       res.json({
-        csrfToken: req.session.csrfToken
+        csrfToken: (req.session as any).csrfToken
       });
     });
 
