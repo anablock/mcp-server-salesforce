@@ -464,7 +464,7 @@ if (process.env.MCP_MODE !== 'http') {
         await mcpServer.connect(transport);
         console.error("Salesforce MCP Server (stdio) also available");
     }
-    if (require.main === module) {
+    if (import.meta.url === `file://${process.argv[1]}`) {
         runStdioServer().catch((error) => {
             console.error("Fatal error running stdio server:", error);
             process.exit(1);
