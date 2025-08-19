@@ -364,6 +364,8 @@ app.get('/health', (req, res) => {
 app.get('/auth/salesforce/login', (req, res) => {
     const userId = req.query.user_id;
     const returnUrl = req.query.return_url;
+    console.log('DEBUG LOGIN: req.query.return_url =', req.query.return_url);
+    console.log('DEBUG LOGIN: returnUrl =', returnUrl);
     if (!userId) {
         return res.status(400).json({ error: 'user_id is required' });
     }
@@ -375,7 +377,9 @@ app.get('/auth/salesforce/login', (req, res) => {
     if (returnUrl) {
         req.session.returnUrl = returnUrl;
     }
+    console.log('DEBUG LOGIN: About to call generateAuthUrl with returnUrl =', returnUrl);
     const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id, returnUrl);
+    console.log('DEBUG LOGIN: Generated authUrl =', authUrl);
     res.redirect(authUrl);
 });
 app.get('/auth/salesforce/callback', async (req, res) => {
