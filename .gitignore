@@ -2,7 +2,7 @@
 node_modules/
 
 # Build output
-dist/
+# dist/  # Temporarily include for deployment
 
 # Environment variables
 .env
