@@ -363,9 +363,21 @@ app.get('/health', (req, res) => {
 // OAuth endpoints
 app.get('/auth/salesforce/login', (req, res) => {
     const userId = req.query.user_id;
-    const returnUrl = req.query.return_url;
+    let returnUrl = req.query.return_url;
+    console.log('DEBUG LOGIN: Full URL =', req.url);
+    console.log('DEBUG LOGIN: Full query =', req.query);
     console.log('DEBUG LOGIN: req.query.return_url =', req.query.return_url);
-    console.log('DEBUG LOGIN: returnUrl =', returnUrl);
+    
+    // Decode return URL if it's encoded
+    if (returnUrl && returnUrl.includes('%')) {
+        try {
+            returnUrl = decodeURIComponent(returnUrl);
+            console.log('DEBUG LOGIN: decoded returnUrl =', returnUrl);
+        } catch (e) {
+            console.log('DEBUG LOGIN: failed to decode returnUrl, using as-is');
+        }
+    }
+    console.log('DEBUG LOGIN: final returnUrl =', returnUrl);
     if (!userId) {
         return res.status(400).json({ error: 'user_id is required' });
     }
