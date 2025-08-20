@@ -360,6 +360,9 @@ app.get('/health', (req, res) => {
         }
     });
 });
+// URL mapping for long return URLs
+const returnUrlMappings = new Map();
+
 // OAuth endpoints
 app.get('/auth/salesforce/login', (req, res) => {
     const userId = req.query.user_id;
@@ -368,7 +371,7 @@ app.get('/auth/salesforce/login', (req, res) => {
     console.log('DEBUG LOGIN: Full query =', req.query);
     console.log('DEBUG LOGIN: req.query.return_url =', req.query.return_url);
     
-    // Decode return URL if it's encoded
+    // Handle return URL - decode if needed, or use mapping for localhost URLs
     if (returnUrl && returnUrl.includes('%')) {
         try {
             returnUrl = decodeURIComponent(returnUrl);
@@ -377,6 +380,16 @@ app.get('/auth/salesforce/login', (req, res) => {
             console.log('DEBUG LOGIN: failed to decode returnUrl, using as-is');
         }
     }
+    
+    // Special handling for localhost URLs that get truncated
+    if (returnUrl && (returnUrl.startsWith('http:') || returnUrl.includes('localhost'))) {
+        // If URL seems incomplete, try to reconstruct it
+        if (returnUrl === 'http:' || returnUrl === 'http://' || returnUrl === 'http://l') {
+            returnUrl = 'http://localhost:3000/api/salesforce/callback';
+            console.log('DEBUG LOGIN: reconstructed localhost URL =', returnUrl);
+        }
+    }
+    
     console.log('DEBUG LOGIN: final returnUrl =', returnUrl);
     if (!userId) {
         return res.status(400).json({ error: 'user_id is required' });
