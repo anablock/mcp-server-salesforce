@@ -381,6 +381,12 @@ app.get('/auth/salesforce/login', (req, res) => {
         }
     }
     
+    // Clean up return URL - remove newlines and extra whitespace
+    if (returnUrl) {
+        returnUrl = returnUrl.trim().replace(/\n/g, '').replace(/\r/g, '');
+        console.log('DEBUG LOGIN: cleaned returnUrl =', returnUrl);
+    }
+    
     // Special handling for localhost URLs that get truncated or missing
     if (!returnUrl || returnUrl === '' || (returnUrl && (returnUrl.startsWith('http:') || returnUrl.includes('localhost')))) {
         // If URL is missing or seems incomplete, try to reconstruct it for NotePilot integration
