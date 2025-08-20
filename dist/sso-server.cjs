@@ -381,10 +381,10 @@ app.get('/auth/salesforce/login', (req, res) => {
         }
     }
     
-    // Special handling for localhost URLs that get truncated
-    if (returnUrl && (returnUrl.startsWith('http:') || returnUrl.includes('localhost'))) {
-        // If URL seems incomplete, try to reconstruct it
-        if (returnUrl === 'http:' || returnUrl === 'http://' || returnUrl === 'http://l') {
+    // Special handling for localhost URLs that get truncated or missing
+    if (!returnUrl || returnUrl === '' || (returnUrl && (returnUrl.startsWith('http:') || returnUrl.includes('localhost')))) {
+        // If URL is missing or seems incomplete, try to reconstruct it for NotePilot integration
+        if (!returnUrl || returnUrl === '' || returnUrl === 'http:' || returnUrl === 'http://' || returnUrl === 'http://l') {
             returnUrl = 'http://localhost:3000/api/salesforce/callback';
             console.log('DEBUG LOGIN: reconstructed localhost URL =', returnUrl);
         }
