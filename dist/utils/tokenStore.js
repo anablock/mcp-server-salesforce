@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.tokenStore = void 0;
-const uuid_1 = require("uuid");
+import { v4 as uuidv4 } from 'uuid';
 class TokenStore {
     constructor() {
         this.connections = new Map();
@@ -10,7 +7,7 @@ class TokenStore {
     }
     // Store user connection after OAuth
     storeConnection(userId, sessionId, tokens) {
-        const connectionId = (0, uuid_1.v4)();
+        const connectionId = uuidv4();
         const connection = {
             userId,
             sessionId,
@@ -104,10 +101,10 @@ class TokenStore {
         return Array.from(this.connections.values());
     }
 }
-exports.tokenStore = new TokenStore();
+export const tokenStore = new TokenStore();
 // Cleanup every hour
 setInterval(() => {
-    const cleaned = exports.tokenStore.cleanup();
+    const cleaned = tokenStore.cleanup();
     if (cleaned > 0) {
         console.log(`Cleaned up ${cleaned} expired connections`);
     }

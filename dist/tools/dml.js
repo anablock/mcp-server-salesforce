@@ -1,8 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DML_RECORDS = void 0;
-exports.handleDMLRecords = handleDMLRecords;
-exports.DML_RECORDS = {
+export const DML_RECORDS = {
     name: "salesforce_dml_records",
     description: `Perform data manipulation operations on Salesforce records:
   - insert: Create new records
@@ -36,7 +32,7 @@ exports.DML_RECORDS = {
         required: ["operation", "objectName", "records"]
     }
 };
-async function handleDMLRecords(conn, args) {
+export async function handleDMLRecords(conn, args) {
     const { operation, objectName, records, externalIdField } = args;
     let result;
     switch (operation) {

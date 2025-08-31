@@ -17,10 +17,11 @@ export declare class SalesforceOAuth {
     private config;
     private pendingStates;
     constructor(config: OAuthConfig);
-    generateAuthUrl(userId: string, sessionId: string): string;
+    generateAuthUrl(userId: string, sessionId: string, returnUrl?: string): string;
     validateState(state: string): {
         userId: string;
         sessionId: string;
+        returnUrl?: string;
     } | null;
     exchangeCodeForTokens(code: string): Promise<OAuthTokenResponse>;
     refreshToken(refreshToken: string, instanceUrl: string): Promise<OAuthTokenResponse>;

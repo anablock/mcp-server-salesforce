@@ -10,7 +10,7 @@ export declare class SalesforceConnectionError extends Error {
     constructor(message: string, code: string, statusCode?: number, isRetryable?: boolean);
 }
 export interface ConnectionResult {
-    connection: jsforce.Connection;
+    connection: jsforce;
     refreshed: boolean;
 }
 /**
@@ -18,7 +18,7 @@ export interface ConnectionResult {
  * @param config Optional connection configuration
  * @returns Connected jsforce Connection instance
  */
-export declare function createSalesforceConnection(config?: ConnectionConfig): Promise<jsforce.Connection>;
+export declare function createSalesforceConnection(config?: ConnectionConfig): Promise<jsforce>;
 /**
  * Creates a Salesforce connection for a specific user using stored tokens
  */
@@ -30,7 +30,7 @@ export declare function createSessionSalesforceConnection(sessionId: string): Pr
 /**
  * Connection health check
  */
-export declare function checkConnectionHealth(conn: jsforce.Connection): Promise<{
+export declare function checkConnectionHealth(conn: any): Promise<{
     healthy: boolean;
     latency?: number;
     error?: string;

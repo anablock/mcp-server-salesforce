@@ -1,12 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.SalesforceOAuth = void 0;
-const uuid_1 = require("uuid");
-const node_fetch_1 = __importDefault(require("node-fetch"));
-class SalesforceOAuth {
+import { v4 as uuidv4 } from 'uuid';
+import fetch from 'node-fetch';
+export class SalesforceOAuth {
     constructor(config) {
         this.pendingStates = new Map();
         this.config = config;
@@ -15,7 +9,7 @@ class SalesforceOAuth {
     }
     // Generate authorization URL
     generateAuthUrl(userId, sessionId, returnUrl) {
-        const state = (0, uuid_1.v4)();
+        const state = uuidv4();
         const timestamp = Date.now();
         this.pendingStates.set(state, { userId, sessionId, timestamp, returnUrl });
         const params = new URLSearchParams({
@@ -52,7 +46,7 @@ class SalesforceOAuth {
             client_secret: this.config.clientSecret,
             redirect_uri: this.config.redirectUri
         });
-        const response = await (0, node_fetch_1.default)(tokenUrl, {
+        const response = await fetch(tokenUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -75,7 +69,7 @@ class SalesforceOAuth {
             client_id: this.config.clientId,
             client_secret: this.config.clientSecret
         });
-        const response = await (0, node_fetch_1.default)(tokenUrl, {
+        const response = await fetch(tokenUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -95,7 +89,7 @@ class SalesforceOAuth {
         const body = new URLSearchParams({
             token
         });
-        const response = await (0, node_fetch_1.default)(revokeUrl, {
+        const response = await fetch(revokeUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -110,7 +104,7 @@ class SalesforceOAuth {
     // Get user info from Salesforce
     async getUserInfo(accessToken, instanceUrl) {
         const userInfoUrl = `${instanceUrl}/services/oauth2/userinfo`;
-        const response = await (0, node_fetch_1.default)(userInfoUrl, {
+        const response = await fetch(userInfoUrl, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`
             }
@@ -132,4 +126,3 @@ class SalesforceOAuth {
         }
     }
 }
-exports.SalesforceOAuth = SalesforceOAuth;

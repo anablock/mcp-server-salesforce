@@ -1,8 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DESCRIBE_OBJECT = void 0;
-exports.handleDescribeObject = handleDescribeObject;
-exports.DESCRIBE_OBJECT = {
+export const DESCRIBE_OBJECT = {
     name: "salesforce_describe_object",
     description: "Get detailed schema metadata including all fields, relationships, and field properties of any Salesforce object. Examples: 'Account' shows all Account fields including custom fields; 'Case' shows all Case fields including relationships to Account, Contact etc.",
     inputSchema: {
@@ -16,7 +12,7 @@ exports.DESCRIBE_OBJECT = {
         required: ["objectName"]
     }
 };
-async function handleDescribeObject(conn, objectName) {
+export async function handleDescribeObject(conn, objectName) {
     const describe = await conn.describe(objectName);
     // Format the output
     const formattedDescription = `

@@ -1,8 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.WRITE_APEX = void 0;
-exports.handleWriteApex = handleWriteApex;
-exports.WRITE_APEX = {
+export const WRITE_APEX = {
     name: "salesforce_write_apex",
     description: `Create or update Apex classes in Salesforce.
   
@@ -60,7 +56,7 @@ Notes:
  * @param args Arguments for writing Apex classes
  * @returns Tool response with operation result
  */
-async function handleWriteApex(conn, args) {
+export async function handleWriteApex(conn, args) {
     try {
         // Validate inputs
         if (!args.className) {

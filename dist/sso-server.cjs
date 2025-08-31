@@ -124,17 +124,12 @@ async function executeTool(conn, toolName, args) {
                 limit: queryArgs.limit
             };
             result = await (0, query_js_1.handleQueryRecords)(conn, validatedArgs);
-            // Try to parse records from result
-            try {
-                if (typeof result === 'string') {
-                    const parsed = JSON.parse(result);
-                    return { records: parsed.records || parsed };
-                }
-                return { records: result };
-            }
-            catch (parseError) {
-                return { records: [], rawResult: result };
-            }
+            // The query tool now returns { records, metadata, content }
+            return {
+                records: result.records || [],
+                metadata: result.metadata,
+                rawResult: result
+            };
         }
         case "salesforce_dml_records": {
             const dmlArgs = args;
@@ -292,28 +287,68 @@ app.post('/natural-language', async (req, res) => {
         // If the analysis was successful and we have a tool call, execute it
         if (nlResponse.success && nlResponse.toolCall) {
             try {
-                // Check if user has an active session for this userId
-                // For now, we'll use the session from the request
-                const sessionId = req.session.id;
-                if (!sessionId) {
+                // Check if user has an active connection
+                if (!tokenStore_js_1.tokenStore.hasActiveConnection(userId)) {
                     // Return the analysis without execution
                     return res.json({
                         ...nlResponse,
-                        error: 'Authentication required - please complete OAuth flow first',
+                        error: 'Salesforce connection not found for user. Please complete OAuth flow first.',
                         executionSkipped: true
                     });
                 }
-                // Get Salesforce connection
-                const conn = await (0, connection_js_1.createSessionSalesforceConnection)(sessionId);
+                // Get Salesforce connection using userId
+                const conn = await (0, connection_js_1.createUserSalesforceConnection)(userId);
                 // Execute the tool call
                 const toolResult = await executeTool(conn, nlResponse.toolCall.name, nlResponse.toolCall.arguments);
-                // Return the analysis with execution results
-                return res.json({
+                // Format the results for better display in the document editor
+                let formattedResponse = {
                     ...nlResponse,
                     records: toolResult.records,
                     metadata: toolResult.metadata,
                     executionResult: toolResult
-                });
+                };
+                // Add formatted results text for easy insertion into documents
+                if (toolResult.records && Array.isArray(toolResult.records)) {
+                    const recordCount = toolResult.records.length;
+                    let resultsText = `## ${nlResponse.intent}\n\n`;
+                    resultsText += `**Found ${recordCount} record${recordCount !== 1 ? 's' : ''}:**\n\n`;
+                    
+                    if (recordCount > 0) {
+                        const displayCount = Math.min(recordCount, 10);
+                        
+                        // Get field names (excluding attributes)
+                        const firstRecord = toolResult.records[0];
+                        const fields = Object.keys(firstRecord).filter(key => key !== 'attributes');
+                        
+                        // Create markdown table
+                        if (fields.length > 0) {
+                            // Table header
+                            resultsText += `| ${fields.join(' | ')} |\n`;
+                            resultsText += `|${fields.map(() => '---').join('|')}|\n`;
+                            
+                            // Table rows
+                            toolResult.records.slice(0, displayCount).forEach((record) => {
+                                const values = fields.map(field => {
+                                    const value = record[field];
+                                    if (value === null || value === undefined) return '';
+                                    if (typeof value === 'object') return JSON.stringify(value);
+                                    return String(value).replace(/\|/g, '\\|'); // Escape pipes
+                                });
+                                resultsText += `| ${values.join(' | ')} |\n`;
+                            });
+                            
+                            if (recordCount > displayCount) {
+                                resultsText += `\n*Showing first ${displayCount} of ${recordCount} records*\n`;
+                            }
+                        }
+                    }
+                    
+                    resultsText += `\n**Query:** \`${nlResponse.soql || 'N/A'}\`\n`;
+                    resultsText += `\n*Generated by Salesforce AI Assistant on ${new Date().toLocaleString()}*`;
+                    
+                    formattedResponse.formattedResults = resultsText;
+                }
+                return res.json(formattedResponse);
             }
             catch (executionError) {
                 console.error('Tool execution error:', executionError);

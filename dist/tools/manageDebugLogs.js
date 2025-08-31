@@ -1,8 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.MANAGE_DEBUG_LOGS = void 0;
-exports.handleManageDebugLogs = handleManageDebugLogs;
-exports.MANAGE_DEBUG_LOGS = {
+export const MANAGE_DEBUG_LOGS = {
     name: "salesforce_manage_debug_logs",
     description: `Manage debug logs for Salesforce users - enable, disable, or retrieve logs.
   
@@ -90,7 +86,7 @@ Notes:
  * @param args Arguments for managing debug logs
  * @returns Tool response with operation results
  */
-async function handleManageDebugLogs(conn, args) {
+export async function handleManageDebugLogs(conn, args) {
     try {
         // Validate inputs
         if (!args.username) {

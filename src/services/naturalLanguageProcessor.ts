@@ -242,19 +242,28 @@ Analyze this request and provide the structured JSON response.`;
     
     // Default to query
     const fields = ['Id', 'Name'];
-    if (primaryObject === 'Lead') fields.push('Email', 'Company', 'State');
+    if (primaryObject === 'Lead') fields.push('Email', 'Company', 'State', 'Phone', 'CreatedDate', 'Status');
     if (primaryObject === 'Contact') fields.push('Email', 'Phone', 'Account.Name');
     if (primaryObject === 'Opportunity') fields.push('Amount', 'StageName', 'CloseDate');
     
     let whereClause = '';
     if (lowerRequest.includes('california') || lowerRequest.includes('ca')) {
-      whereClause = "State = 'CA'";
+      whereClause = "State = 'CA' OR State = 'California'";
     }
-    if (lowerRequest.includes('this month')) {
+    if (lowerRequest.includes('last 30 days') || lowerRequest.includes('last month')) {
+      whereClause = whereClause ? `${whereClause} AND CreatedDate = LAST_N_DAYS:30` : 'CreatedDate = LAST_N_DAYS:30';
+    } else if (lowerRequest.includes('this month')) {
       whereClause = whereClause ? `${whereClause} AND CreatedDate = THIS_MONTH` : 'CreatedDate = THIS_MONTH';
+    } else if (lowerRequest.includes('today')) {
+      whereClause = whereClause ? `${whereClause} AND CreatedDate = TODAY` : 'CreatedDate = TODAY';
+    } else if (lowerRequest.includes('this week')) {
+      whereClause = whereClause ? `${whereClause} AND CreatedDate = THIS_WEEK` : 'CreatedDate = THIS_WEEK';
     }
     
-    const soql = `SELECT ${fields.join(', ')} FROM ${primaryObject}${whereClause ? ` WHERE ${whereClause}` : ''} LIMIT 20`;
+    let soql = `SELECT ${fields.join(', ')} FROM ${primaryObject}`;
+    if (whereClause) soql += ` WHERE ${whereClause}`;
+    if (lowerRequest.includes('created') || lowerRequest.includes('date')) soql += ' ORDER BY CreatedDate DESC';
+    soql += ' LIMIT 50';
     
     return {
       type: 'query',

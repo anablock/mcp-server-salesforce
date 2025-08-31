@@ -1,8 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.SEARCH_OBJECTS = void 0;
-exports.handleSearchObjects = handleSearchObjects;
-exports.SEARCH_OBJECTS = {
+export const SEARCH_OBJECTS = {
     name: "salesforce_search_objects",
     description: "Search for Salesforce standard and custom objects by name pattern. Examples: 'Account' will find Account, AccountHistory; 'Order' will find WorkOrder, ServiceOrder__c etc.",
     inputSchema: {
@@ -16,7 +12,7 @@ exports.SEARCH_OBJECTS = {
         required: ["searchPattern"]
     }
 };
-async function handleSearchObjects(conn, searchPattern) {
+export async function handleSearchObjects(conn, searchPattern) {
     // Get list of all objects
     const describeGlobal = await conn.describeGlobal();
     // Process search pattern to create a more flexible search

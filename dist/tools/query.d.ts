@@ -13,4 +13,18 @@ export declare function handleQueryRecords(conn: any, args: QueryArgs): Promise<
         text: string;
     }[];
     isError: boolean;
+    records?: undefined;
+    metadata?: undefined;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    records: any;
+    metadata: {
+        totalSize: any;
+        done: any;
+        soql: string;
+    };
+    isError: boolean;
 }>;

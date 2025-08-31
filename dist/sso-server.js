@@ -1,73 +1,35 @@
 #!/usr/bin/env node
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const express_session_1 = __importDefault(require("express-session"));
-const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
-const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
-const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
-const dotenv = __importStar(require("dotenv"));
-const connection_js_1 = require("./utils/connection.js");
-const salesforceOAuth_js_1 = require("./utils/salesforceOAuth.js");
-const tokenStore_js_1 = require("./utils/tokenStore.js");
+import express from 'express';
+import cors from 'cors';
+import session from 'express-session';
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
+import * as dotenv from "dotenv";
+import { createSalesforceConnection, createSessionSalesforceConnection, createUserSalesforceConnection } from "./utils/connection.js";
+import { SalesforceOAuth } from "./utils/salesforceOAuth.js";
+import { tokenStore } from "./utils/tokenStore.js";
 // Import all tool handlers
-const search_js_1 = require("./tools/search.js");
-const describe_js_1 = require("./tools/describe.js");
-const query_js_1 = require("./tools/query.js");
-const dml_js_1 = require("./tools/dml.js");
-const manageObject_js_1 = require("./tools/manageObject.js");
-const manageField_js_1 = require("./tools/manageField.js");
-const searchAll_js_1 = require("./tools/searchAll.js");
-const readApex_js_1 = require("./tools/readApex.js");
-const writeApex_js_1 = require("./tools/writeApex.js");
-const readApexTrigger_js_1 = require("./tools/readApexTrigger.js");
-const writeApexTrigger_js_1 = require("./tools/writeApexTrigger.js");
-const executeAnonymous_js_1 = require("./tools/executeAnonymous.js");
-const manageDebugLogs_js_1 = require("./tools/manageDebugLogs.js");
+import { SEARCH_OBJECTS, handleSearchObjects } from "./tools/search.js";
+import { DESCRIBE_OBJECT, handleDescribeObject } from "./tools/describe.js";
+import { QUERY_RECORDS, handleQueryRecords } from "./tools/query.js";
+import { DML_RECORDS, handleDMLRecords } from "./tools/dml.js";
+import { MANAGE_OBJECT, handleManageObject } from "./tools/manageObject.js";
+import { MANAGE_FIELD, handleManageField } from "./tools/manageField.js";
+import { SEARCH_ALL, handleSearchAll } from "./tools/searchAll.js";
+import { READ_APEX, handleReadApex } from "./tools/readApex.js";
+import { WRITE_APEX, handleWriteApex } from "./tools/writeApex.js";
+import { READ_APEX_TRIGGER, handleReadApexTrigger } from "./tools/readApexTrigger.js";
+import { WRITE_APEX_TRIGGER, handleWriteApexTrigger } from "./tools/writeApexTrigger.js";
+import { EXECUTE_ANONYMOUS, handleExecuteAnonymous } from "./tools/executeAnonymous.js";
+import { MANAGE_DEBUG_LOGS, handleManageDebugLogs } from "./tools/manageDebugLogs.js";
 // Import natural language processor
-const naturalLanguageProcessor_js_1 = require("./services/naturalLanguageProcessor.js");
+import { NaturalLanguageProcessor } from "./services/naturalLanguageProcessor.js";
 dotenv.config();
-const app = (0, express_1.default)();
+const app = express();
 const PORT = process.env.PORT || 3000;
 // Session configuration
-app.use((0, express_session_1.default)({
+app.use(session({
     secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
     resave: false,
     saveUninitialized: false,
@@ -77,12 +39,12 @@ app.use((0, express_session_1.default)({
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));
-app.use((0, cors_1.default)({
+app.use(cors({
     origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'https://notepad.ai'],
     credentials: true
 }));
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 // Initialize Salesforce OAuth
 const oauthConfig = {
     clientId: process.env.SALESFORCE_CLIENT_ID,
@@ -90,9 +52,9 @@ const oauthConfig = {
     redirectUri: process.env.SALESFORCE_REDIRECT_URI || `${process.env.BASE_URL || 'http://localhost:3000'}/auth/salesforce/callback`,
     loginUrl: process.env.SALESFORCE_LOGIN_URL || 'https://login.salesforce.com'
 };
-const salesforceOAuth = new salesforceOAuth_js_1.SalesforceOAuth(oauthConfig);
+const salesforceOAuth = new SalesforceOAuth(oauthConfig);
 // Initialize Natural Language Processor
-const nlProcessor = new naturalLanguageProcessor_js_1.NaturalLanguageProcessor();
+const nlProcessor = new NaturalLanguageProcessor();
 // Helper function to execute MCP tools
 async function executeTool(conn, toolName, args) {
     let result;
@@ -101,14 +63,14 @@ async function executeTool(conn, toolName, args) {
             const { searchPattern } = args;
             if (!searchPattern)
                 throw new Error('searchPattern is required');
-            result = await (0, search_js_1.handleSearchObjects)(conn, searchPattern);
+            result = await handleSearchObjects(conn, searchPattern);
             break;
         }
         case "salesforce_describe_object": {
             const { objectName } = args;
             if (!objectName)
                 throw new Error('objectName is required');
-            result = await (0, describe_js_1.handleDescribeObject)(conn, objectName);
+            result = await handleDescribeObject(conn, objectName);
             return { metadata: result };
         }
         case "salesforce_query_records": {
@@ -123,18 +85,13 @@ async function executeTool(conn, toolName, args) {
                 orderBy: queryArgs.orderBy,
                 limit: queryArgs.limit
             };
-            result = await (0, query_js_1.handleQueryRecords)(conn, validatedArgs);
-            // Try to parse records from result
-            try {
-                if (typeof result === 'string') {
-                    const parsed = JSON.parse(result);
-                    return { records: parsed.records || parsed };
-                }
-                return { records: result };
-            }
-            catch (parseError) {
-                return { records: [], rawResult: result };
-            }
+            result = await handleQueryRecords(conn, validatedArgs);
+            // Extract records and metadata from the updated tool response
+            return {
+                records: result.records || [],
+                metadata: result.metadata,
+                rawResult: result
+            };
         }
         case "salesforce_dml_records": {
             const dmlArgs = args;
@@ -147,19 +104,19 @@ async function executeTool(conn, toolName, args) {
                 records: dmlArgs.records,
                 externalIdField: dmlArgs.externalIdField
             };
-            result = await (0, dml_js_1.handleDMLRecords)(conn, validatedArgs);
+            result = await handleDMLRecords(conn, validatedArgs);
             break;
         }
         case "salesforce_write_apex_trigger": {
             const triggerArgs = args;
             const validatedArgs = {
+                operation: triggerArgs.operation,
                 triggerName: triggerArgs.triggerName,
                 objectName: triggerArgs.objectName,
-                events: triggerArgs.events,
                 body: triggerArgs.body,
                 apiVersion: triggerArgs.apiVersion
             };
-            result = await (0, writeApexTrigger_js_1.handleWriteApexTrigger)(conn, validatedArgs);
+            result = await handleWriteApexTrigger(conn, validatedArgs);
             break;
         }
         case "salesforce_write_apex": {
@@ -170,7 +127,7 @@ async function executeTool(conn, toolName, args) {
                 body: apexArgs.body,
                 apiVersion: apexArgs.apiVersion
             };
-            result = await (0, writeApex_js_1.handleWriteApex)(conn, validatedArgs);
+            result = await handleWriteApex(conn, validatedArgs);
             break;
         }
         // Add other tools as needed...
@@ -292,28 +249,63 @@ app.post('/natural-language', async (req, res) => {
         // If the analysis was successful and we have a tool call, execute it
         if (nlResponse.success && nlResponse.toolCall) {
             try {
-                // Check if user has an active session for this userId
-                // For now, we'll use the session from the request
-                const sessionId = req.session.id;
-                if (!sessionId) {
+                // Check if user has an active connection
+                if (!tokenStore.hasActiveConnection(userId)) {
                     // Return the analysis without execution
                     return res.json({
                         ...nlResponse,
-                        error: 'Authentication required - please complete OAuth flow first',
+                        error: 'Salesforce connection not found for user. Please complete OAuth flow first.',
                         executionSkipped: true
                     });
                 }
-                // Get Salesforce connection
-                const conn = await (0, connection_js_1.createSessionSalesforceConnection)(sessionId);
+                // Get Salesforce connection using userId
+                const conn = await createUserSalesforceConnection(userId);
                 // Execute the tool call
                 const toolResult = await executeTool(conn, nlResponse.toolCall.name, nlResponse.toolCall.arguments);
-                // Return the analysis with execution results
-                return res.json({
+                // Format the results for better display in the document editor
+                let formattedResponse = {
                     ...nlResponse,
                     records: toolResult.records,
                     metadata: toolResult.metadata,
                     executionResult: toolResult
-                });
+                };
+                // Add formatted results text for easy insertion into documents
+                if (toolResult.records && Array.isArray(toolResult.records)) {
+                    const recordCount = toolResult.records.length;
+                    let resultsText = `## ${nlResponse.intent}\n\n`;
+                    resultsText += `**Found ${recordCount} record${recordCount !== 1 ? 's' : ''}:**\n\n`;
+                    if (recordCount > 0) {
+                        const displayCount = Math.min(recordCount, 10);
+                        // Get field names (excluding attributes)
+                        const firstRecord = toolResult.records[0];
+                        const fields = Object.keys(firstRecord).filter(key => key !== 'attributes');
+                        // Create markdown table
+                        if (fields.length > 0) {
+                            // Table header
+                            resultsText += `| ${fields.join(' | ')} |\n`;
+                            resultsText += `|${fields.map(() => '---').join('|')}|\n`;
+                            // Table rows
+                            toolResult.records.slice(0, displayCount).forEach((record) => {
+                                const values = fields.map(field => {
+                                    const value = record[field];
+                                    if (value === null || value === undefined)
+                                        return '';
+                                    if (typeof value === 'object')
+                                        return JSON.stringify(value);
+                                    return String(value).replace(/\|/g, '\\|'); // Escape pipes
+                                });
+                                resultsText += `| ${values.join(' | ')} |\n`;
+                            });
+                            if (recordCount > displayCount) {
+                                resultsText += `\n*Showing first ${displayCount} of ${recordCount} records*\n`;
+                            }
+                        }
+                    }
+                    resultsText += `\n**Query:** \`${nlResponse.soql || 'N/A'}\`\n`;
+                    resultsText += `\n*Generated by Salesforce AI Assistant on ${new Date().toLocaleString()}*`;
+                    formattedResponse.formattedResults = resultsText;
+                }
+                return res.json(formattedResponse);
             }
             catch (executionError) {
                 console.error('Tool execution error:', executionError);
@@ -355,8 +347,8 @@ app.get('/health', (req, res) => {
             unit: 'MB'
         },
         connections: {
-            active: tokenStore_js_1.tokenStore.getActiveConnections().length,
-            total: tokenStore_js_1.tokenStore.getActiveConnections().length
+            active: tokenStore.getActiveConnections().length,
+            total: tokenStore.getActiveConnections().length
         }
     });
 });
@@ -395,7 +387,7 @@ app.get('/auth/salesforce/callback', async (req, res) => {
         // Exchange code for tokens
         const tokenData = await salesforceOAuth.exchangeCodeForTokens(code);
         // Store tokens in token store
-        const connectionId = tokenStore_js_1.tokenStore.storeConnection(stateInfo.userId, stateInfo.sessionId, {
+        const connectionId = tokenStore.storeConnection(stateInfo.userId, stateInfo.sessionId, {
             accessToken: tokenData.access_token,
             refreshToken: tokenData.refresh_token,
             instanceUrl: tokenData.instance_url,
@@ -425,7 +417,7 @@ app.get('/auth/salesforce/callback', async (req, res) => {
 app.post('/auth/salesforce/logout', (req, res) => {
     const userId = req.session.userId;
     if (userId) {
-        tokenStore_js_1.tokenStore.removeConnection(userId);
+        tokenStore.removeConnection(userId);
     }
     req.session.destroy(() => {
         res.json({ success: true, message: 'Logged out successfully' });
@@ -436,8 +428,8 @@ app.get('/auth/status', (req, res) => {
     if (!userId) {
         return res.json({ connected: false });
     }
-    const hasConnection = tokenStore_js_1.tokenStore.hasActiveConnection(userId);
-    const connection = tokenStore_js_1.tokenStore.getConnectionByUserId(userId);
+    const hasConnection = tokenStore.hasActiveConnection(userId);
+    const connection = tokenStore.getConnectionByUserId(userId);
     res.json({
         connected: hasConnection,
         userId: userId,
@@ -618,7 +610,7 @@ app.post('/mcp/call', async (req, res) => {
             return res.status(400).json({ error: 'Arguments are required' });
         }
         // Get connection for this session
-        const conn = await (0, connection_js_1.createSessionSalesforceConnection)(sessionId);
+        const conn = await createSessionSalesforceConnection(sessionId);
         // Handle tool calls (same logic as stdio server)
         let result;
         switch (name) {
@@ -626,14 +618,14 @@ app.post('/mcp/call', async (req, res) => {
                 const { searchPattern } = args;
                 if (!searchPattern)
                     throw new Error('searchPattern is required');
-                result = await (0, search_js_1.handleSearchObjects)(conn, searchPattern);
+                result = await handleSearchObjects(conn, searchPattern);
                 break;
             }
             case "salesforce_describe_object": {
                 const { objectName } = args;
                 if (!objectName)
                     throw new Error('objectName is required');
-                result = await (0, describe_js_1.handleDescribeObject)(conn, objectName);
+                result = await handleDescribeObject(conn, objectName);
                 break;
             }
             case "salesforce_query_records": {
@@ -648,7 +640,7 @@ app.post('/mcp/call', async (req, res) => {
                     orderBy: queryArgs.orderBy,
                     limit: queryArgs.limit
                 };
-                result = await (0, query_js_1.handleQueryRecords)(conn, validatedArgs);
+                result = await handleQueryRecords(conn, validatedArgs);
                 break;
             }
             case "salesforce_dml_records": {
@@ -662,7 +654,7 @@ app.post('/mcp/call', async (req, res) => {
                     records: dmlArgs.records,
                     externalIdField: dmlArgs.externalIdField
                 };
-                result = await (0, dml_js_1.handleDMLRecords)(conn, validatedArgs);
+                result = await handleDMLRecords(conn, validatedArgs);
                 break;
             }
             case "salesforce_manage_object": {
@@ -681,7 +673,7 @@ app.post('/mcp/call', async (req, res) => {
                     nameFieldFormat: objectArgs.nameFieldFormat,
                     sharingModel: objectArgs.sharingModel
                 };
-                result = await (0, manageObject_js_1.handleManageObject)(conn, validatedArgs);
+                result = await handleManageObject(conn, validatedArgs);
                 break;
             }
             case "salesforce_manage_field": {
@@ -708,7 +700,7 @@ app.post('/mcp/call', async (req, res) => {
                     picklistValues: fieldArgs.picklistValues,
                     description: fieldArgs.description
                 };
-                result = await (0, manageField_js_1.handleManageField)(conn, validatedArgs);
+                result = await handleManageField(conn, validatedArgs);
                 break;
             }
             case "salesforce_search_all": {
@@ -734,7 +726,7 @@ app.post('/mcp/call', async (req, res) => {
                     updateable: searchArgs.updateable,
                     viewable: searchArgs.viewable
                 };
-                result = await (0, searchAll_js_1.handleSearchAll)(conn, validatedArgs);
+                result = await handleSearchAll(conn, validatedArgs);
                 break;
             }
             case "salesforce_read_apex": {
@@ -744,7 +736,7 @@ app.post('/mcp/call', async (req, res) => {
                     namePattern: apexArgs.namePattern,
                     includeMetadata: apexArgs.includeMetadata
                 };
-                result = await (0, readApex_js_1.handleReadApex)(conn, validatedArgs);
+                result = await handleReadApex(conn, validatedArgs);
                 break;
             }
             case "salesforce_write_apex": {
@@ -758,7 +750,7 @@ app.post('/mcp/call', async (req, res) => {
                     apiVersion: apexArgs.apiVersion,
                     body: apexArgs.body
                 };
-                result = await (0, writeApex_js_1.handleWriteApex)(conn, validatedArgs);
+                result = await handleWriteApex(conn, validatedArgs);
                 break;
             }
             case "salesforce_read_apex_trigger": {
@@ -768,7 +760,7 @@ app.post('/mcp/call', async (req, res) => {
                     namePattern: triggerArgs.namePattern,
                     includeMetadata: triggerArgs.includeMetadata
                 };
-                result = await (0, readApexTrigger_js_1.handleReadApexTrigger)(conn, validatedArgs);
+                result = await handleReadApexTrigger(conn, validatedArgs);
                 break;
             }
             case "salesforce_write_apex_trigger": {
@@ -783,7 +775,7 @@ app.post('/mcp/call', async (req, res) => {
                     apiVersion: triggerArgs.apiVersion,
                     body: triggerArgs.body
                 };
-                result = await (0, writeApexTrigger_js_1.handleWriteApexTrigger)(conn, validatedArgs);
+                result = await handleWriteApexTrigger(conn, validatedArgs);
                 break;
             }
             case "salesforce_execute_anonymous": {
@@ -795,7 +787,7 @@ app.post('/mcp/call', async (req, res) => {
                     apexCode: executeArgs.apexCode,
                     logLevel: executeArgs.logLevel
                 };
-                result = await (0, executeAnonymous_js_1.handleExecuteAnonymous)(conn, validatedArgs);
+                result = await handleExecuteAnonymous(conn, validatedArgs);
                 break;
             }
             case "salesforce_manage_debug_logs": {
@@ -812,7 +804,7 @@ app.post('/mcp/call', async (req, res) => {
                     logId: debugLogsArgs.logId,
                     includeBody: debugLogsArgs.includeBody
                 };
-                result = await (0, manageDebugLogs_js_1.handleManageDebugLogs)(conn, validatedArgs);
+                result = await handleManageDebugLogs(conn, validatedArgs);
                 break;
             }
             default:
@@ -835,7 +827,7 @@ app.listen(PORT, () => {
     console.error(`Health check: http://localhost:${PORT}/health`);
 });
 // Also provide stdio MCP server for direct Claude integration
-const mcpServer = new index_js_1.Server({
+const mcpServer = new Server({
     name: "salesforce-mcp-sso-server",
     version: "1.0.0",
 }, {
@@ -844,30 +836,30 @@ const mcpServer = new index_js_1.Server({
     },
 });
 // Tool handlers (same as original)
-mcpServer.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => ({
+mcpServer.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
-        search_js_1.SEARCH_OBJECTS,
-        describe_js_1.DESCRIBE_OBJECT,
-        query_js_1.QUERY_RECORDS,
-        dml_js_1.DML_RECORDS,
-        manageObject_js_1.MANAGE_OBJECT,
-        manageField_js_1.MANAGE_FIELD,
-        searchAll_js_1.SEARCH_ALL,
-        readApex_js_1.READ_APEX,
-        writeApex_js_1.WRITE_APEX,
-        readApexTrigger_js_1.READ_APEX_TRIGGER,
-        writeApexTrigger_js_1.WRITE_APEX_TRIGGER,
-        executeAnonymous_js_1.EXECUTE_ANONYMOUS,
-        manageDebugLogs_js_1.MANAGE_DEBUG_LOGS
+        SEARCH_OBJECTS,
+        DESCRIBE_OBJECT,
+        QUERY_RECORDS,
+        DML_RECORDS,
+        MANAGE_OBJECT,
+        MANAGE_FIELD,
+        SEARCH_ALL,
+        READ_APEX,
+        WRITE_APEX,
+        READ_APEX_TRIGGER,
+        WRITE_APEX_TRIGGER,
+        EXECUTE_ANONYMOUS,
+        MANAGE_DEBUG_LOGS
     ],
 }));
-mcpServer.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
+mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
         const { name, arguments: args } = request.params;
         if (!args)
             throw new Error('Arguments are required');
         // For stdio mode, use default connection
-        const conn = await (0, connection_js_1.createSalesforceConnection)();
+        const conn = await createSalesforceConnection();
         // Same tool handling logic as HTTP endpoints...
         // (Implementation would be identical to the HTTP version above)
         // For brevity, using the original connection method for stdio mode
@@ -885,7 +877,7 @@ mcpServer.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) =>
 // Only start stdio server if not in HTTP mode
 if (process.env.MCP_MODE !== 'http') {
     async function runStdioServer() {
-        const transport = new stdio_js_1.StdioServerTransport();
+        const transport = new StdioServerTransport();
         await mcpServer.connect(transport);
         console.error("Salesforce MCP Server (stdio) also available");
     }

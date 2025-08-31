@@ -1,11 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.NaturalLanguageProcessor = void 0;
-const node_fetch_1 = __importDefault(require("node-fetch"));
-class NaturalLanguageProcessor {
+import fetch from 'node-fetch';
+export class NaturalLanguageProcessor {
     constructor() {
         this.claudeApiKey = process.env.ANTHROPIC_API_KEY || '';
         if (!this.claudeApiKey) {
@@ -126,7 +120,7 @@ Analyze this request and provide the structured JSON response.`;
         }
     }
     async callClaudeAPI(systemPrompt, userPrompt) {
-        const response = await (0, node_fetch_1.default)('https://api.anthropic.com/v1/messages', {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -209,19 +203,33 @@ Analyze this request and provide the structured JSON response.`;
         // Default to query
         const fields = ['Id', 'Name'];
         if (primaryObject === 'Lead')
-            fields.push('Email', 'Company', 'State');
+            fields.push('Email', 'Company', 'State', 'Phone', 'CreatedDate', 'Status');
         if (primaryObject === 'Contact')
             fields.push('Email', 'Phone', 'Account.Name');
         if (primaryObject === 'Opportunity')
             fields.push('Amount', 'StageName', 'CloseDate');
         let whereClause = '';
         if (lowerRequest.includes('california') || lowerRequest.includes('ca')) {
-            whereClause = "State = 'CA'";
+            whereClause = "State = 'CA' OR State = 'California'";
         }
-        if (lowerRequest.includes('this month')) {
+        if (lowerRequest.includes('last 30 days') || lowerRequest.includes('last month')) {
+            whereClause = whereClause ? `${whereClause} AND CreatedDate = LAST_N_DAYS:30` : 'CreatedDate = LAST_N_DAYS:30';
+        }
+        else if (lowerRequest.includes('this month')) {
             whereClause = whereClause ? `${whereClause} AND CreatedDate = THIS_MONTH` : 'CreatedDate = THIS_MONTH';
         }
-        const soql = `SELECT ${fields.join(', ')} FROM ${primaryObject}${whereClause ? ` WHERE ${whereClause}` : ''} LIMIT 20`;
+        else if (lowerRequest.includes('today')) {
+            whereClause = whereClause ? `${whereClause} AND CreatedDate = TODAY` : 'CreatedDate = TODAY';
+        }
+        else if (lowerRequest.includes('this week')) {
+            whereClause = whereClause ? `${whereClause} AND CreatedDate = THIS_WEEK` : 'CreatedDate = THIS_WEEK';
+        }
+        let soql = `SELECT ${fields.join(', ')} FROM ${primaryObject}`;
+        if (whereClause)
+            soql += ` WHERE ${whereClause}`;
+        if (lowerRequest.includes('created') || lowerRequest.includes('date'))
+            soql += ' ORDER BY CreatedDate DESC';
+        soql += ' LIMIT 50';
         return {
             type: 'query',
             intent: `Query ${primaryObject} records`,
@@ -239,4 +247,3 @@ Analyze this request and provide the structured JSON response.`;
         };
     }
 }
-exports.NaturalLanguageProcessor = NaturalLanguageProcessor;

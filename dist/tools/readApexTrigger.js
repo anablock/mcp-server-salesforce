@@ -1,8 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.READ_APEX_TRIGGER = void 0;
-exports.handleReadApexTrigger = handleReadApexTrigger;
-exports.READ_APEX_TRIGGER = {
+export const READ_APEX_TRIGGER = {
     name: "salesforce_read_apex_trigger",
     description: `Read Apex triggers from Salesforce.
   
@@ -72,7 +68,7 @@ function wildcardToLikePattern(pattern) {
  * @param args Arguments for reading Apex triggers
  * @returns Tool response with Apex trigger information
  */
-async function handleReadApexTrigger(conn, args) {
+export async function handleReadApexTrigger(conn, args) {
     try {
         // If a specific trigger name is provided, get the full trigger body
         if (args.triggerName) {

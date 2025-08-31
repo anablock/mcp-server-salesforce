@@ -1,8 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.EXECUTE_ANONYMOUS = void 0;
-exports.handleExecuteAnonymous = handleExecuteAnonymous;
-exports.EXECUTE_ANONYMOUS = {
+export const EXECUTE_ANONYMOUS = {
     name: "salesforce_execute_anonymous",
     description: `Execute anonymous Apex code in Salesforce.
   
@@ -54,7 +50,7 @@ Notes:
  * @param args Arguments for executing anonymous Apex
  * @returns Tool response with execution results and debug logs
  */
-async function handleExecuteAnonymous(conn, args) {
+export async function handleExecuteAnonymous(conn, args) {
     try {
         // Validate inputs
         if (!args.apexCode || args.apexCode.trim() === '') {

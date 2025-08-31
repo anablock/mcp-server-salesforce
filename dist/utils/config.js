@@ -28,7 +28,7 @@ function loadConfig() {
         port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
         baseUrl: process.env.BASE_URL,
         sessionSecret: process.env.SESSION_SECRET,
-        allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [],
+        allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['https://notepad.ai', 'https://www.notepad.ai'],
         salesforce: {
             clientId: process.env.SALESFORCE_CLIENT_ID,
             clientSecret: process.env.SALESFORCE_CLIENT_SECRET,

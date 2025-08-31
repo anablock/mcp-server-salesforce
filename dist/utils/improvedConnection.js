@@ -60,7 +60,7 @@ async function createClientCredentialsConnection(loginUrl) {
         client_secret: clientSecret
     });
     const tokenResponse = await makeTokenRequest(tokenUrl, requestBody);
-    const conn = new jsforce.Connection({
+    const conn = new jsforce({
         instanceUrl: tokenResponse.instance_url,
         accessToken: tokenResponse.access_token
     });
@@ -76,7 +76,7 @@ async function createUsernamePasswordConnection(loginUrl) {
         throw new SalesforceConnectionError('SALESFORCE_USERNAME and SALESFORCE_PASSWORD are required for Username/Password authentication', 'MISSING_CREDENTIALS', 400);
     }
     logger.info('Connecting to Salesforce using Username/Password authentication');
-    const conn = new jsforce.Connection({ loginUrl });
+    const conn = new jsforce({ loginUrl });
     try {
         await conn.login(username, password + (token || ''));
         await testConnection(conn);
@@ -105,7 +105,7 @@ export async function createUserSalesforceConnection(userId) {
     let refreshed = false;
     let conn;
     try {
-        conn = new jsforce.Connection({
+        conn = new jsforce({
             instanceUrl: userConnection.tokens.instanceUrl,
             accessToken: userConnection.tokens.accessToken,
             refreshToken: userConnection.tokens.refreshToken
@@ -133,7 +133,7 @@ export async function createUserSalesforceConnection(userId) {
             try {
                 const refreshResult = await refreshUserToken(userConnection);
                 if (refreshResult) {
-                    conn = new jsforce.Connection({
+                    conn = new jsforce({
                         instanceUrl: userConnection.tokens.instanceUrl,
                         accessToken: refreshResult.accessToken
                     });

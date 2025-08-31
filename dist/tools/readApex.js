@@ -1,8 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.READ_APEX = void 0;
-exports.handleReadApex = handleReadApex;
-exports.READ_APEX = {
+export const READ_APEX = {
     name: "salesforce_read_apex",
     description: `Read Apex classes from Salesforce.
   
@@ -72,7 +68,7 @@ function wildcardToLikePattern(pattern) {
  * @param args Arguments for reading Apex classes
  * @returns Tool response with Apex class information
  */
-async function handleReadApex(conn, args) {
+export async function handleReadApex(conn, args) {
     try {
         // If a specific class name is provided, get the full class body
         if (args.className) {

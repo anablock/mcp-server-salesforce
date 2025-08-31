@@ -2,6 +2,9 @@ import { persistentTokenStore } from './persistentTokenStore.js';
 import { checkConnectionHealth, createSalesforceConnection } from './improvedConnection.js';
 import { logger } from './logger.js';
 class HealthChecker {
+    getStartTime() {
+        return this.startTime;
+    }
     constructor() {
         this.startTime = Date.now();
     }
@@ -197,7 +200,7 @@ export function pingHandler(req, res) {
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        uptime: Date.now() - healthChecker.startTime
+        uptime: Date.now() - healthChecker.getStartTime()
     });
 }
 // Ready/liveness probe handlers for Kubernetes
@@ -227,7 +230,7 @@ export function livenessHandler(req, res) {
     res.json({
         alive: true,
         timestamp: new Date().toISOString(),
-        uptime: Date.now() - healthChecker.startTime
+        uptime: Date.now() - healthChecker.getStartTime()
     });
 }
 // Periodic health check (optional background monitoring)
