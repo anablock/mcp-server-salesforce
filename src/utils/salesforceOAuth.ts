@@ -20,7 +20,7 @@ export interface OAuthTokenResponse {
 
 export class SalesforceOAuth {
   private config: OAuthConfig;
-  private pendingStates: Map<string, { userId: string; sessionId: string; timestamp: number }> = new Map();
+  private pendingStates: Map<string, { userId: string; sessionId: string; timestamp: number; returnUrl?: string }> = new Map();
 
   constructor(config: OAuthConfig) {
     this.config = config;
@@ -30,11 +30,11 @@ export class SalesforceOAuth {
   }
 
   // Generate authorization URL
-  generateAuthUrl(userId: string, sessionId: string): string {
+  generateAuthUrl(userId: string, sessionId: string, returnUrl?: string): string {
     const state = uuidv4();
     const timestamp = Date.now();
     
-    this.pendingStates.set(state, { userId, sessionId, timestamp });
+    this.pendingStates.set(state, { userId, sessionId, timestamp, returnUrl });
 
     const params = new URLSearchParams({
       response_type: 'code',
@@ -49,7 +49,7 @@ export class SalesforceOAuth {
   }
 
   // Validate state and get user info
-  validateState(state: string): { userId: string; sessionId: string } | null {
+  validateState(state: string): { userId: string; sessionId: string; returnUrl?: string } | null {
     const stateInfo = this.pendingStates.get(state);
     if (!stateInfo) return null;
 
@@ -61,7 +61,7 @@ export class SalesforceOAuth {
     }
 
     this.pendingStates.delete(state);
-    return { userId: stateInfo.userId, sessionId: stateInfo.sessionId };
+    return { userId: stateInfo.userId, sessionId: stateInfo.sessionId, returnUrl: stateInfo.returnUrl };
   }
 
   // Exchange code for tokens

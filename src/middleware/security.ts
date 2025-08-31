@@ -68,7 +68,7 @@ export function createSecurityMiddleware(config: Config) {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           path: req.path,
-          userId: req.session?.userId
+          userId: (req.session as any)?.userId
         });
         res.status(429).json({
           error: 'Too many authentication attempts',
@@ -94,7 +94,7 @@ export function createSecurityMiddleware(config: Config) {
       handler: (req: Request, res: Response) => {
         logger.warn('MCP rate limit exceeded', {
           sessionId: req.session?.id,
-          userId: req.session?.userId,
+          userId: (req.session as any)?.userId,
           path: req.path,
           ip: req.ip
         });
@@ -124,7 +124,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
 
   // Check for CSRF token in header or body
   const token = req.get('X-CSRF-Token') || req.body.csrfToken;
-  const sessionToken = req.session?.csrfToken;
+  const sessionToken = (req.session as any)?.csrfToken;
 
   if (!token || !sessionToken || token !== sessionToken) {
     logger.warn('CSRF token mismatch', {
@@ -150,13 +150,13 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
  * Generate and set CSRF token
  */
 export function generateCSRFToken(req: Request, res: Response, next: NextFunction) {
-  if (!req.session?.csrfToken) {
+  if (!(req.session as any)?.csrfToken) {
     const crypto = require('crypto');
-    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+    (req.session as any).csrfToken = crypto.randomBytes(32).toString('hex');
   }
   
   // Add CSRF token to response headers for client use
-  res.setHeader('X-CSRF-Token', req.session.csrfToken);
+  res.setHeader('X-CSRF-Token', (req.session as any).csrfToken);
   
   next();
 }

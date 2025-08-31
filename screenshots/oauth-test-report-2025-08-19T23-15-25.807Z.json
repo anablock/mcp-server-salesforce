@@ -1,0 +1,62 @@
+{
+  "testRun": {
+    "timestamp": "2025-08-19T23:15:25.807Z",
+    "totalTests": 4,
+    "passed": 4,
+    "failed": 0
+  },
+  "results": [
+    {
+      "scenario": "oauth-return-url-test",
+      "description": "Test OAuth login with return URL parameter",
+      "url": "https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com/auth/salesforce/login?user_id=return_test&return_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fsalesforce%2Fcallback",
+      "status": 200,
+      "finalUrl": "https://login.salesforce.com/?startURL=%2Fsetup%2Fsecur%2FRemoteAccessAuthorizationPage.apexp%3Fsource%3DCAAAAZjJw_kqMDAwMDAwMDAwMDAwMDAwAAABAGqk6DxFy-B-nJl7tsKB05PL4eeKcqBbyeFO8bLEoduuJFoYIaAQnrBBBQrPN7o3gT7N_El9MR-oUp-vVhJ1qhl7nX5G_EBE1-dSifQWo1p3cUpUjNX8-JgceFIBo65gaMaMa3qCERBOyKWwz-pEoAiFkufkqCxhkX8-6U0QgDWA2CKvhoEOOxJCMPZFfoWTqOlLfsc_Jx0up4TpFaTAHvNG5fb4R3CT5BIE53pDxMaOqXtu7juLKzlve80YutDYQFb_H3WZZX4tbhW-8qrn7y82kgcFkQPezffPKLG5zE7R08oFP2h2Fc8UZvosTHJfKFSFZAjIIeaMKbGd--oiZcNLp5JVnAHGHcqAhTejzX2E_wRUHCoFCE76xyaNth90pDilbfAmcCGSHg3_me3pwwEln06mE_C-86dQHwZoWHhdcSwKzerfp_-9prA8Ka6zCloeYNGcRAvhRj-BEyCrEadMvDkxaStAJus1kN9P0bv0Qe7GR_Gx-fYmkAJYvzDpJylCtqKbrgxljyNPJ7J-8PoE-6GszflyYMIgXrbas8dw_pGWWkx9j41r-34FdLNu8wR06qftVjyiG5WqMxxcjoTBECA7i2jWaHIK4lQiUKaaaeMfa6j2ixNLp-llvU3knwwfHskdGDxu8WkHzBC_LhiJN0RK9Ely3r5C_GxogCQNXUsplpgYyClnpD0D9qdIu43tZB8b2GfD-B0ChH67WTem94HUr3amelGF6pqZXgiQNwA4OpjZO-Z2mjofK2fvvVRqrMtn6MsshIvzBEVhWd9JiV-h5C-yBk5ef9z8UCx-YvKMOOOwFJi8JmEBH0TPi91BdoiTvHBeAG7Clrv-1oc%253D&sdtd=1",
+      "redirectTest": "FAIL",
+      "contentTest": "N/A",
+      "stateParam": "N/A",
+      "screenshot": "2025-08-19T23-15-21.992Z-oauth-return-url-test.png",
+      "timestamp": "2025-08-19T23-15-21.992Z",
+      "success": true
+    },
+    {
+      "scenario": "oauth-without-return-url",
+      "description": "Test OAuth login without return URL parameter",
+      "url": "https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com/auth/salesforce/login?user_id=no_return_test",
+      "status": 200,
+      "finalUrl": "https://login.salesforce.com/?startURL=%2Fsetup%2Fsecur%2FRemoteAccessAuthorizationPage.apexp%3Fsource%3DCAAAAZjJxABbMDAwMDAwMDAwMDAwMDAwAAABACMF_c6GqfQkeg-twu1dUHdSy6IpPxZZ8GEccfl89EleMhxN9u8Aq6lBVDgk9zVVDAAnAuunfDdKobd6KiMkgZ-tP93v9NDKHWlJLeHhymJznPYdJZAvNoejiUM3wsw_6m_SbuOxdKZxYQ5xUN6VeZNyg1LlpepUT-aB2Bi1MboQWY9AH4c3WqAAUt0MEkk_raZvav_utpYboOJDCL11A3OGQGzCpO_KyYIUOv2XAS6yYpFLTxUUmK0CrOuYgCuK31xBPR06IAxa7pTfKBGdIGezmXlNo0qG73BzkWL88mb5Ts6A58S8mw09GNCMdpKA8UYTnq_HL5KaWDXH2VyJ_iZU6Cfyb4D2RH893VHFehaRFnSBaRyUflEKFp1ZxQ6R-Oj-yf54H7TaDm-Won14JSUmXZFbJ6hy3qcqWpJeAIzdt5fbQVf1Nm15hSRv0gLCmVjQ_B9nura6AMyEPRBI2rsNuriYcKogxI0yD6V3p-DEhOFKTm96G5uO6IO0_ql2z5SCxY1snEOZQjGifotW6_kZPddcYRFMuuyDWI17xgDIVeV1IZ9Qqtkfzua7CuZi-cZUcmDUr8qeuHoLLS5NBVyDcUbO9BjAClyk51UWaAOGtBbD5QDWpn98scvXyafUQdJgAaE8qI5DX-VjmHKfbBkG_DTxoDUI9fNGcMGtyKP0cc9RVhlJgaVOp8vV_bEhhAwuSfwdmo3mCDO6mmPLsDP5jdH0skAwdP-G7Rjo2EUZo_mIVVyJkYpp6HGLKtjNBglcK_-m54OiUd9Y1WpIE5N8GGgxLpfADQJCQbbXkCjTR7gx8nVZIkiZIjSkeJS_0hP9uwShVRoVbfzKmS9dzzs%253D&sdtd=1",
+      "redirectTest": "FAIL",
+      "contentTest": "N/A",
+      "stateParam": "N/A",
+      "screenshot": "2025-08-19T23-15-23.526Z-oauth-without-return-url.png",
+      "timestamp": "2025-08-19T23-15-23.526Z",
+      "success": true
+    },
+    {
+      "scenario": "health-check",
+      "description": "Test server health endpoint",
+      "url": "https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com/health",
+      "status": 200,
+      "finalUrl": "https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com/health",
+      "redirectTest": "N/A",
+      "contentTest": "PASS",
+      "stateParam": "N/A",
+      "screenshot": "2025-08-19T23-15-24.616Z-health-check.png",
+      "timestamp": "2025-08-19T23-15-24.616Z",
+      "success": true
+    },
+    {
+      "scenario": "mcp-tools-endpoint",
+      "description": "Test MCP tools endpoint",
+      "url": "https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com/mcp/tools",
+      "status": 200,
+      "finalUrl": "https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com/mcp/tools",
+      "redirectTest": "N/A",
+      "contentTest": "PASS",
+      "stateParam": "N/A",
+      "screenshot": "2025-08-19T23-15-25.731Z-mcp-tools-endpoint.png",
+      "timestamp": "2025-08-19T23-15-25.731Z",
+      "success": true
+    }
+  ]
+}

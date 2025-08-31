@@ -1,5 +1,5 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
-import type { Connection } from "jsforce";
+import jsforce from "jsforce";
 
 export const MANAGE_DEBUG_LOGS: Tool = {
   name: "salesforce_manage_debug_logs",

@@ -12,7 +12,7 @@ import {
 import * as dotenv from "dotenv";
 import { v4 as uuidv4 } from 'uuid';
 
-import { createSalesforceConnection, createSessionSalesforceConnection } from "./utils/connection.js";
+import { createSalesforceConnection, createSessionSalesforceConnection, createUserSalesforceConnection } from "./utils/connection.js";
 import { SalesforceOAuth } from "./utils/salesforceOAuth.js";
 import { tokenStore } from "./utils/tokenStore.js";
 
@@ -30,6 +30,9 @@ import { READ_APEX_TRIGGER, handleReadApexTrigger, ReadApexTriggerArgs } from ".
 import { WRITE_APEX_TRIGGER, handleWriteApexTrigger, WriteApexTriggerArgs } from "./tools/writeApexTrigger.js";
 import { EXECUTE_ANONYMOUS, handleExecuteAnonymous, ExecuteAnonymousArgs } from "./tools/executeAnonymous.js";
 import { MANAGE_DEBUG_LOGS, handleManageDebugLogs, ManageDebugLogsArgs } from "./tools/manageDebugLogs.js";
+
+// Import natural language processor
+import { NaturalLanguageProcessor, NaturalLanguageRequest } from "./services/naturalLanguageProcessor.js";
 
 dotenv.config();
 
@@ -66,12 +69,332 @@ const oauthConfig = {
 
 const salesforceOAuth = new SalesforceOAuth(oauthConfig);
 
-// Health check endpoint
+// Initialize Natural Language Processor
+const nlProcessor = new NaturalLanguageProcessor();
+
+// Helper function to execute MCP tools
+async function executeTool(conn: any, toolName: string, args: any) {
+  let result;
+  
+  switch (toolName) {
+    case "salesforce_search_objects": {
+      const { searchPattern } = args as { searchPattern: string };
+      if (!searchPattern) throw new Error('searchPattern is required');
+      result = await handleSearchObjects(conn, searchPattern);
+      break;
+    }
+
+    case "salesforce_describe_object": {
+      const { objectName } = args as { objectName: string };
+      if (!objectName) throw new Error('objectName is required');
+      result = await handleDescribeObject(conn, objectName);
+      return { metadata: result };
+    }
+
+    case "salesforce_query_records": {
+      const queryArgs = args as Record<string, unknown>;
+      if (!queryArgs.objectName || !Array.isArray(queryArgs.fields)) {
+        throw new Error('objectName and fields array are required for query');
+      }
+      const validatedArgs: QueryArgs = {
+        objectName: queryArgs.objectName as string,
+        fields: queryArgs.fields as string[],
+        whereClause: queryArgs.whereClause as string | undefined,
+        orderBy: queryArgs.orderBy as string | undefined,
+        limit: queryArgs.limit as number | undefined
+      };
+      result = await handleQueryRecords(conn, validatedArgs);
+      
+      // Extract records and metadata from the updated tool response
+      return {
+        records: result.records || [],
+        metadata: result.metadata,
+        rawResult: result
+      };
+    }
+
+    case "salesforce_dml_records": {
+      const dmlArgs = args as Record<string, unknown>;
+      if (!dmlArgs.operation || !dmlArgs.objectName || !Array.isArray(dmlArgs.records)) {
+        throw new Error('operation, objectName, and records array are required for DML');
+      }
+      const validatedArgs: DMLArgs = {
+        operation: dmlArgs.operation as 'insert' | 'update' | 'delete' | 'upsert',
+        objectName: dmlArgs.objectName as string,
+        records: dmlArgs.records as Record<string, any>[],
+        externalIdField: dmlArgs.externalIdField as string | undefined
+      };
+      result = await handleDMLRecords(conn, validatedArgs);
+      break;
+    }
+
+    case "salesforce_write_apex_trigger": {
+      const triggerArgs = args as Record<string, unknown>;
+      const validatedArgs: WriteApexTriggerArgs = {
+        operation: triggerArgs.operation as 'create' | 'update',
+        triggerName: triggerArgs.triggerName as string,
+        objectName: triggerArgs.objectName as string | undefined,
+        body: triggerArgs.body as string,
+        apiVersion: triggerArgs.apiVersion as string | undefined
+      };
+      result = await handleWriteApexTrigger(conn, validatedArgs);
+      break;
+    }
+
+    case "salesforce_write_apex": {
+      const apexArgs = args as Record<string, unknown>;
+      const validatedArgs: WriteApexArgs = {
+        operation: apexArgs.operation as 'create' | 'update',
+        className: apexArgs.className as string,
+        body: apexArgs.body as string,
+        apiVersion: apexArgs.apiVersion as string | undefined
+      };
+      result = await handleWriteApex(conn, validatedArgs);
+      break;
+    }
+
+    // Add other tools as needed...
+    default:
+      throw new Error(`Tool ${toolName} not implemented in executeTool function`);
+  }
+
+  return { result };
+}
+
+// MCP Tools endpoint - List available tools for integration
+app.get('/mcp/tools', (req, res) => {
+  const baseUrl = req.get('host') ? `${req.protocol}://${req.get('host')}` : process.env.BASE_URL || `http://localhost:${PORT}`;
+  
+  res.json({
+    tools: [
+      {
+        name: 'salesforce_search_objects',
+        description: 'Search and discover Salesforce objects by name pattern',
+        category: 'discovery'
+      },
+      {
+        name: 'salesforce_describe_object',
+        description: 'Get detailed metadata for Salesforce objects including fields and relationships',
+        category: 'metadata'
+      },
+      {
+        name: 'salesforce_query_records',
+        description: 'Query Salesforce records with SOQL-like syntax',
+        category: 'data'
+      },
+      {
+        name: 'salesforce_dml_records',
+        description: 'Insert, update, delete, or upsert Salesforce records',
+        category: 'data'
+      },
+      {
+        name: 'salesforce_manage_object',
+        description: 'Create or update custom Salesforce objects',
+        category: 'metadata'
+      },
+      {
+        name: 'salesforce_manage_field',
+        description: 'Create or update fields on Salesforce objects',
+        category: 'metadata'
+      },
+      {
+        name: 'salesforce_search_all',
+        description: 'Search across multiple Salesforce objects using SOSL',
+        category: 'discovery'
+      },
+      {
+        name: 'salesforce_read_apex',
+        description: 'Read Apex class source code',
+        category: 'development'
+      },
+      {
+        name: 'salesforce_write_apex',
+        description: 'Create or update Apex classes',
+        category: 'development'
+      },
+      {
+        name: 'salesforce_read_apex_trigger',
+        description: 'Read Apex trigger source code',
+        category: 'development'
+      },
+      {
+        name: 'salesforce_write_apex_trigger',
+        description: 'Create or update Apex triggers',
+        category: 'development'
+      },
+      {
+        name: 'salesforce_execute_anonymous',
+        description: 'Execute anonymous Apex code',
+        category: 'development'
+      },
+      {
+        name: 'salesforce_manage_debug_logs',
+        description: 'Enable, disable, or retrieve debug logs for users',
+        category: 'development'
+      }
+    ],
+    total: 13,
+    categories: {
+      discovery: 2,
+      metadata: 3,
+      data: 2,
+      development: 6
+    },
+    authentication: {
+      required: true,
+      flow: 'OAuth 2.0',
+      loginUrl: `${baseUrl}/auth/salesforce/login?user_id={USER_ID}`,
+      statusUrl: `${baseUrl}/auth/status`
+    },
+    documentation: `${baseUrl}/api/docs`,
+    usage: `Call tools via POST ${baseUrl}/mcp/call with authentication`
+  });
+});
+
+// Natural Language Processing endpoint
+app.post('/natural-language', async (req, res) => {
+  try {
+    const { request: userRequest, userId, conversationHistory } = req.body as NaturalLanguageRequest;
+    
+    if (!userRequest || typeof userRequest !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Request field is required and must be a string'
+      });
+    }
+
+    if (!userId || typeof userId !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'userId field is required and must be a string'
+      });
+    }
+
+    // Process the natural language request
+    const nlResponse = await nlProcessor.processNaturalLanguageRequest({
+      request: userRequest,
+      userId,
+      conversationHistory
+    });
+
+    // If the analysis was successful and we have a tool call, execute it
+    if (nlResponse.success && nlResponse.toolCall) {
+      try {
+        // Check if user has an active connection
+        if (!tokenStore.hasActiveConnection(userId)) {
+          // Return the analysis without execution
+          return res.json({
+            ...nlResponse,
+            error: 'Salesforce connection not found for user. Please complete OAuth flow first.',
+            executionSkipped: true
+          });
+        }
+
+        // Get Salesforce connection using userId
+        const conn = await createUserSalesforceConnection(userId);
+        
+        // Execute the tool call
+        const toolResult = await executeTool(conn, nlResponse.toolCall.name, nlResponse.toolCall.arguments);
+        
+        // Format the results for better display in the document editor
+        let formattedResponse: any = {
+          ...nlResponse,
+          records: toolResult.records,
+          metadata: toolResult.metadata,
+          executionResult: toolResult
+        };
+
+        // Add formatted results text for easy insertion into documents
+        if (toolResult.records && Array.isArray(toolResult.records)) {
+          const recordCount = toolResult.records.length;
+          let resultsText = `## ${nlResponse.intent}\n\n`;
+          resultsText += `**Found ${recordCount} record${recordCount !== 1 ? 's' : ''}:**\n\n`;
+          
+          if (recordCount > 0) {
+            const displayCount = Math.min(recordCount, 10);
+            
+            // Get field names (excluding attributes)
+            const firstRecord = toolResult.records[0];
+            const fields = Object.keys(firstRecord).filter(key => key !== 'attributes');
+            
+            // Create markdown table
+            if (fields.length > 0) {
+              // Table header
+              resultsText += `| ${fields.join(' | ')} |\n`;
+              resultsText += `|${fields.map(() => '---').join('|')}|\n`;
+              
+              // Table rows
+              toolResult.records.slice(0, displayCount).forEach((record: any) => {
+                const values = fields.map(field => {
+                  const value = record[field];
+                  if (value === null || value === undefined) return '';
+                  if (typeof value === 'object') return JSON.stringify(value);
+                  return String(value).replace(/\|/g, '\\|'); // Escape pipes
+                });
+                resultsText += `| ${values.join(' | ')} |\n`;
+              });
+              
+              if (recordCount > displayCount) {
+                resultsText += `\n*Showing first ${displayCount} of ${recordCount} records*\n`;
+              }
+            }
+          }
+          
+          resultsText += `\n**Query:** \`${nlResponse.soql || 'N/A'}\`\n`;
+          resultsText += `\n*Generated by Salesforce AI Assistant on ${new Date().toLocaleString()}*`;
+          
+          formattedResponse.formattedResults = resultsText;
+        }
+        
+        return res.json(formattedResponse);
+
+      } catch (executionError) {
+        console.error('Tool execution error:', executionError);
+        
+        // Return the analysis with execution error
+        return res.json({
+          ...nlResponse,
+          executionError: executionError instanceof Error ? executionError.message : 'Tool execution failed'
+        });
+      }
+    }
+
+    // Return just the analysis if no tool call or analysis failed
+    return res.json(nlResponse);
+
+  } catch (error) {
+    console.error('Natural language processing error:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Natural language processing failed',
+      type: 'query',
+      intent: 'Error processing request',
+      executedAt: new Date().toISOString()
+    });
+  }
+});
+
+// Health check endpoint with enhanced metrics
 app.get('/health', (req, res) => {
+  const memoryUsage = process.memoryUsage();
+  const uptime = process.uptime();
+  
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || '0.0.0'
+    version: process.env.npm_package_version || '0.0.0',
+    uptime: Math.floor(uptime),
+    uptimeHuman: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`,
+    memory: {
+      used: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+      total: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+      external: Math.round(memoryUsage.external / 1024 / 1024),
+      unit: 'MB'
+    },
+    connections: {
+      active: tokenStore.getActiveConnections().length,
+      total: tokenStore.getActiveConnections().length
+    }
   });
 });
 
@@ -89,12 +412,12 @@ app.get('/auth/salesforce/login', (req, res) => {
     req.session.regenerate(() => {});
   }
 
-  // Store return URL in session
+  // Store return URL in session (backup) and pass to OAuth
   if (returnUrl) {
-    req.session.returnUrl = returnUrl;
+    (req.session as any).returnUrl = returnUrl;
   }
 
-  const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id);
+  const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id, returnUrl);
   res.redirect(authUrl);
 });
 
@@ -132,13 +455,13 @@ app.get('/auth/salesforce/callback', async (req, res) => {
     const userInfo = await salesforceOAuth.getUserInfo(tokenData.access_token, tokenData.instance_url);
 
     // Store user info in session
-    req.session.userId = stateInfo.userId;
-    req.session.salesforceUserId = userInfo.user_id;
-    req.session.salesforceOrgId = userInfo.organization_id;
+    (req.session as any).userId = stateInfo.userId;
+    (req.session as any).salesforceUserId = userInfo.user_id;
+    (req.session as any).salesforceOrgId = userInfo.organization_id;
 
     // Redirect to return URL or success page
-    const returnUrl = req.session.returnUrl || '/auth/success';
-    delete req.session.returnUrl;
+    const returnUrl = stateInfo.returnUrl || (req.session as any).returnUrl || '/auth/success';
+    delete (req.session as any).returnUrl;
 
     const redirectUrl = `${returnUrl}?connected=true&org_id=${userInfo.organization_id}&connection_id=${connectionId}`;
     res.redirect(redirectUrl);
@@ -153,7 +476,7 @@ app.get('/auth/salesforce/callback', async (req, res) => {
 });
 
 app.post('/auth/salesforce/logout', (req, res) => {
-  const userId = req.session.userId;
+  const userId = (req.session as any).userId;
   
   if (userId) {
     tokenStore.removeConnection(userId);
@@ -165,7 +488,7 @@ app.post('/auth/salesforce/logout', (req, res) => {
 });
 
 app.get('/auth/status', (req, res) => {
-  const userId = req.session.userId;
+  const userId = (req.session as any).userId;
   
   if (!userId) {
     return res.json({ connected: false });
@@ -177,50 +500,175 @@ app.get('/auth/status', (req, res) => {
   res.json({
     connected: hasConnection,
     userId: userId,
-    salesforceOrgId: req.session.salesforceOrgId,
+    salesforceOrgId: (req.session as any).salesforceOrgId,
     instanceUrl: connection?.tokens.instanceUrl,
     lastUsed: connection?.lastUsed
   });
 });
 
-// Success page
+// Success page with enhanced UX
 app.get('/auth/success', (req, res) => {
+  const baseUrl = req.get('host') ? `${req.protocol}://${req.get('host')}` : process.env.BASE_URL || `http://localhost:${PORT}`;
+  
   res.send(`
-    <html>
-      <head><title>Salesforce Connected</title></head>
-      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 100px auto; text-align: center;">
-        <h1 style="color: #1798c1;">✅ Successfully Connected to Salesforce!</h1>
-        <p>Your Salesforce account has been connected and is ready to use with the MCP server.</p>
-        <p><strong>Organization ID:</strong> ${req.query.org_id || 'N/A'}</p>
-        <p><strong>Connection ID:</strong> ${req.query.connection_id || 'N/A'}</p>
-        <p style="margin-top: 40px; font-size: 14px; color: #666;">
-          You can now close this window and return to your application.
-        </p>
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Salesforce Connected</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+          }
+          .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+          }
+          .success-header {
+            text-align: center;
+            margin-bottom: 30px;
+          }
+          .success-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+          }
+          .success-title {
+            color: #1798c1;
+            margin: 0 0 15px 0;
+          }
+          .connection-details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+          }
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+          }
+          .detail-row:last-child {
+            border-bottom: none;
+          }
+          .next-steps {
+            margin-top: 30px;
+          }
+          .step-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+          }
+          .step-item {
+            background: #e3f2fd;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #1798c1;
+          }
+          .api-link {
+            display: inline-block;
+            background: #1798c1;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin: 5px;
+          }
+          .api-link:hover {
+            background: #0f7ba1;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #666;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="success-header">
+            <div class="success-icon">🎉</div>
+            <h1 class="success-title">Successfully Connected to Salesforce!</h1>
+            <p>Your Salesforce account is now linked and ready to use with the MCP server.</p>
+          </div>
+          
+          <div class="connection-details">
+            <h3>Connection Details</h3>
+            <div class="detail-row">
+              <span><strong>Organization ID:</strong></span>
+              <span>${req.query.org_id || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span><strong>Connection ID:</strong></span>
+              <span>${req.query.connection_id || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span><strong>Connected At:</strong></span>
+              <span>${new Date().toLocaleString()}</span>
+            </div>
+            <div class="detail-row">
+              <span><strong>Status:</strong></span>
+              <span style="color: #28a745; font-weight: bold;">✓ Active</span>
+            </div>
+          </div>
+          
+          <div class="next-steps">
+            <h3>What's Next?</h3>
+            <ul class="step-list">
+              <li class="step-item">
+                <strong>Return to your application</strong> - You can now close this window and continue using Salesforce tools in your app
+              </li>
+              <li class="step-item">
+                <strong>Explore available tools</strong> - View all 13 available Salesforce tools and their documentation
+              </li>
+              <li class="step-item">
+                <strong>Start building</strong> - Use the MCP tools to query data, manage objects, write Apex code, and more
+              </li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${baseUrl}/mcp/tools" class="api-link" target="_blank">View Available Tools</a>
+            <a href="${baseUrl}/auth/status" class="api-link" target="_blank">Check Connection Status</a>
+            <a href="${baseUrl}/health" class="api-link" target="_blank">Server Health</a>
+          </div>
+          
+          <div class="footer">
+            <p>Need help? Check the <a href="https://github.com/tsmztech/mcp-server-salesforce" target="_blank">documentation</a> or contact support.</p>
+            <p><small>MCP Salesforce Server v${process.env.npm_package_version || '0.0.2'}</small></p>
+          </div>
+        </div>
+        
+        <script>
+          // Auto-close window after 30 seconds if opened as popup
+          if (window.opener) {
+            setTimeout(() => {
+              if (confirm('Connection successful! Close this window?')) {
+                window.close();
+              }
+            }, 30000);
+          }
+        </script>
       </body>
     </html>
   `);
 });
 
-// MCP Tool endpoints (for HTTP-based MCP clients)
-app.get('/mcp/tools', (req, res) => {
-  res.json({
-    tools: [
-      SEARCH_OBJECTS, 
-      DESCRIBE_OBJECT, 
-      QUERY_RECORDS, 
-      DML_RECORDS,
-      MANAGE_OBJECT,
-      MANAGE_FIELD,
-      SEARCH_ALL,
-      READ_APEX,
-      WRITE_APEX,
-      READ_APEX_TRIGGER,
-      WRITE_APEX_TRIGGER,
-      EXECUTE_ANONYMOUS,
-      MANAGE_DEBUG_LOGS
-    ]
-  });
-});
+// MCP Call endpoint (for HTTP-based MCP clients)
 
 app.post('/mcp/call', async (req, res) => {
   try {
@@ -533,7 +981,7 @@ if (process.env.MCP_MODE !== 'http') {
     console.error("Salesforce MCP Server (stdio) also available");
   }
 
-  if (require.main === module) {
+  if (import.meta.url === `file://${process.argv[1]}`) {
     runStdioServer().catch((error) => {
       console.error("Fatal error running stdio server:", error);
       process.exit(1);

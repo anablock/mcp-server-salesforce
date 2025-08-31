@@ -22,7 +22,7 @@ export class SalesforceConnectionError extends Error {
 }
 
 export interface ConnectionResult {
-  connection: jsforce.Connection;
+  connection: jsforce;
   refreshed: boolean;
 }
 
@@ -31,7 +31,7 @@ export interface ConnectionResult {
  * @param config Optional connection configuration
  * @returns Connected jsforce Connection instance
  */
-export async function createSalesforceConnection(config?: ConnectionConfig): Promise<jsforce.Connection> {
+export async function createSalesforceConnection(config?: ConnectionConfig): Promise<jsforce> {
   const connectionType = config?.type || 
     (process.env.SALESFORCE_CONNECTION_TYPE as ConnectionType) || 
     ConnectionType.User_Password;
@@ -56,7 +56,7 @@ export async function createSalesforceConnection(config?: ConnectionConfig): Pro
   }
 }
 
-async function createClientCredentialsConnection(loginUrl: string): Promise<jsforce.Connection> {
+async function createClientCredentialsConnection(loginUrl: string): Promise<jsforce> {
   const clientId = process.env.SALESFORCE_CLIENT_ID;
   const clientSecret = process.env.SALESFORCE_CLIENT_SECRET;
   
@@ -81,7 +81,7 @@ async function createClientCredentialsConnection(loginUrl: string): Promise<jsfo
   
   const tokenResponse = await makeTokenRequest(tokenUrl, requestBody);
   
-  const conn = new jsforce.Connection({
+  const conn = new jsforce({
     instanceUrl: tokenResponse.instance_url,
     accessToken: tokenResponse.access_token
   });
@@ -92,7 +92,7 @@ async function createClientCredentialsConnection(loginUrl: string): Promise<jsfo
   return conn;
 }
 
-async function createUsernamePasswordConnection(loginUrl: string): Promise<jsforce.Connection> {
+async function createUsernamePasswordConnection(loginUrl: string): Promise<jsforce> {
   const username = process.env.SALESFORCE_USERNAME;
   const password = process.env.SALESFORCE_PASSWORD;
   const token = process.env.SALESFORCE_TOKEN;
@@ -107,7 +107,7 @@ async function createUsernamePasswordConnection(loginUrl: string): Promise<jsfor
   
   logger.info('Connecting to Salesforce using Username/Password authentication');
   
-  const conn = new jsforce.Connection({ loginUrl });
+  const conn = new jsforce({ loginUrl });
   
   try {
     await conn.login(username, password + (token || ''));
@@ -148,10 +148,10 @@ export async function createUserSalesforceConnection(userId: string): Promise<Co
   }
 
   let refreshed = false;
-  let conn: jsforce.Connection;
+  let conn: jsforce;
 
   try {
-    conn = new jsforce.Connection({
+    conn = new jsforce({
       instanceUrl: userConnection.tokens.instanceUrl,
       accessToken: userConnection.tokens.accessToken,
       refreshToken: userConnection.tokens.refreshToken
@@ -183,7 +183,7 @@ export async function createUserSalesforceConnection(userId: string): Promise<Co
       try {
         const refreshResult = await refreshUserToken(userConnection);
         if (refreshResult) {
-          conn = new jsforce.Connection({
+          conn = new jsforce({
             instanceUrl: userConnection.tokens.instanceUrl,
             accessToken: refreshResult.accessToken
           });
@@ -228,7 +228,7 @@ export async function createSessionSalesforceConnection(sessionId: string): Prom
   return createUserSalesforceConnection(userConnection.userId);
 }
 
-async function makeTokenRequest(tokenUrl: URL, requestBody: string): Promise<any> {
+async function makeTokenRequest(tokenUrl: URL, requestBody: string): Promise<jsforce> {
   return new Promise((resolve, reject) => {
     const req = https.request({
       method: 'POST',
@@ -292,7 +292,7 @@ async function makeTokenRequest(tokenUrl: URL, requestBody: string): Promise<any
   });
 }
 
-async function testConnection(conn: jsforce.Connection): Promise<void> {
+async function testConnection(conn: any): Promise<void> {
   try {
     // Simple test to verify the connection works
     const limits = await conn.query('SELECT Id FROM Organization LIMIT 1');
@@ -325,7 +325,7 @@ async function refreshUserToken(userConnection: UserConnection): Promise<{ acces
 /**
  * Connection health check
  */
-export async function checkConnectionHealth(conn: jsforce.Connection): Promise<{
+export async function checkConnectionHealth(conn: any): Promise<{
   healthy: boolean;
   latency?: number;
   error?: string;

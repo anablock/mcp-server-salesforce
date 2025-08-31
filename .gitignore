@@ -2,7 +2,7 @@
 node_modules/
 
 # Build output
-dist/
+# dist/  # Temporarily include for deployment
 
 # Environment variables
 .env
@@ -17,3 +17,4 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.vercel

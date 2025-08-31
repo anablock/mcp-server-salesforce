@@ -152,9 +152,19 @@ async function startServer() {
           req.session.regenerate(() => {});
         }
 
-        // Store return URL in session
+        // Store return URL in session (validate against allowed origins for security)
         if (returnUrl) {
-          req.session.returnUrl = returnUrl;
+          const allowedOrigins = config.allowedOrigins;
+          const returnUrlObj = new URL(returnUrl);
+          const returnOrigin = `${returnUrlObj.protocol}//${returnUrlObj.host}`;
+          
+          if (allowedOrigins.includes(returnOrigin)) {
+            (req.session as any).returnUrl = returnUrl;
+            logger.info('Return URL stored in session', { returnUrl, userId });
+          } else {
+            logger.warn('Invalid return URL rejected', { returnUrl, allowedOrigins, userId });
+            // Still proceed but don't store the return URL
+          }
         }
 
         const authUrl = salesforceOAuth.generateAuthUrl(userId, req.session.id);
@@ -222,9 +232,9 @@ async function startServer() {
         const userInfo = await salesforceOAuth.getUserInfo(tokenData.access_token, tokenData.instance_url);
 
         // Store user info in session
-        req.session.userId = stateInfo.userId;
-        req.session.salesforceUserId = userInfo.user_id;
-        req.session.salesforceOrgId = userInfo.organization_id;
+        (req.session as any).userId = stateInfo.userId;
+        (req.session as any).salesforceUserId = userInfo.user_id;
+        (req.session as any).salesforceOrgId = userInfo.organization_id;
 
         auditLogger.loginAttempt(stateInfo.userId, true, req);
         logger.info('OAuth callback successful', {
@@ -234,8 +244,8 @@ async function startServer() {
         });
 
         // Redirect to return URL or success page
-        const returnUrl = req.session.returnUrl || '/auth/success';
-        delete req.session.returnUrl;
+        const returnUrl = (req.session as any).returnUrl || '/auth/success';
+        delete (req.session as any).returnUrl;
 
         const redirectUrl = `${returnUrl}?connected=true&org_id=${userInfo.organization_id}&connection_id=${connectionId}`;
         res.redirect(redirectUrl);
@@ -288,7 +298,7 @@ async function startServer() {
         res.json({
           connected: hasConnection,
           userId: userId,
-          salesforceOrgId: req.session.salesforceOrgId,
+          salesforceOrgId: (req.session as any).salesforceOrgId,
           instanceUrl: connection?.tokens.instanceUrl,
           lastUsed: connection?.lastUsed
         });
@@ -304,7 +314,7 @@ async function startServer() {
     // CSRF token endpoint
     app.get('/auth/csrf', (req, res) => {
       res.json({
-        csrfToken: req.session.csrfToken
+        csrfToken: (req.session as any).csrfToken
       });
     });
 
@@ -506,13 +516,143 @@ async function handleToolCall(name: string, args: any, conn: any) {
       return await handleDMLRecords(conn, validatedArgs);
     }
 
-    // ... (include all other tool handlers as in the original implementation)
+    case "salesforce_manage_object": {
+      const manageObjectArgs = args as Record<string, unknown>;
+      if (!manageObjectArgs.operation) {
+        throw new Error('operation is required for manage object');
+      }
+      const validatedArgs: ManageObjectArgs = {
+        operation: manageObjectArgs.operation as 'create' | 'update',
+        objectName: manageObjectArgs.objectName as string,
+        label: manageObjectArgs.label as string | undefined,
+        pluralLabel: manageObjectArgs.pluralLabel as string | undefined,
+        description: manageObjectArgs.description as string | undefined,
+        nameFieldLabel: manageObjectArgs.nameFieldLabel as string | undefined,
+        nameFieldType: manageObjectArgs.nameFieldType as 'Text' | 'AutoNumber' | undefined,
+        sharingModel: manageObjectArgs.sharingModel as 'ReadWrite' | 'Read' | 'Private' | 'ControlledByParent' | undefined
+      };
+      return await handleManageObject(conn, validatedArgs);
+    }
+
+    case "salesforce_manage_field": {
+      const manageFieldArgs = args as Record<string, unknown>;
+      if (!manageFieldArgs.operation || !manageFieldArgs.objectName) {
+        throw new Error('operation and objectName are required for manage field');
+      }
+      const validatedArgs: ManageFieldArgs = {
+        operation: manageFieldArgs.operation as 'create' | 'update',
+        objectName: manageFieldArgs.objectName as string,
+        fieldName: manageFieldArgs.fieldName as string,
+        label: manageFieldArgs.label as string | undefined,
+        type: manageFieldArgs.type as string | undefined,
+        required: manageFieldArgs.required as boolean | undefined,
+        unique: manageFieldArgs.unique as boolean | undefined,
+        externalId: manageFieldArgs.externalId as boolean | undefined,
+        length: manageFieldArgs.length as number | undefined,
+        precision: manageFieldArgs.precision as number | undefined,
+        scale: manageFieldArgs.scale as number | undefined,
+        referenceTo: manageFieldArgs.referenceTo as string | undefined
+      };
+      return await handleManageField(conn, validatedArgs);
+    }
+
+    case "salesforce_search_all": {
+      const searchAllArgs = args as Record<string, unknown>;
+      if (!searchAllArgs.searchTerm) {
+        throw new Error('searchTerm is required for search all');
+      }
+      const validatedArgs: SearchAllArgs = {
+        searchTerm: searchAllArgs.searchTerm as string,
+        objects: (searchAllArgs.objects as any[] || []) as SearchAllArgs['objects'],
+        searchIn: searchAllArgs.searchIn as SearchAllArgs['searchIn'],
+        withClauses: searchAllArgs.withClauses as WithClause[] | undefined
+      };
+      return await handleSearchAll(conn, validatedArgs);
+    }
+
+    case "salesforce_read_apex": {
+      const readApexArgs = args as Record<string, unknown>;
+      if (!readApexArgs.className) {
+        throw new Error('className is required for read apex');
+      }
+      const validatedArgs: ReadApexArgs = {
+        className: readApexArgs.className as string
+      };
+      return await handleReadApex(conn, validatedArgs);
+    }
+
+    case "salesforce_write_apex": {
+      const writeApexArgs = args as Record<string, unknown>;
+      if (!writeApexArgs.operation || !writeApexArgs.className || !writeApexArgs.body) {
+        throw new Error('operation, className and body are required for write apex');
+      }
+      const validatedArgs: WriteApexArgs = {
+        operation: writeApexArgs.operation as 'create' | 'update',
+        className: writeApexArgs.className as string,
+        body: writeApexArgs.body as string,
+        apiVersion: writeApexArgs.apiVersion as string | undefined
+      };
+      return await handleWriteApex(conn, validatedArgs);
+    }
+
+    case "salesforce_read_apex_trigger": {
+      const readTriggerArgs = args as Record<string, unknown>;
+      if (!readTriggerArgs.triggerName) {
+        throw new Error('triggerName is required for read apex trigger');
+      }
+      const validatedArgs: ReadApexTriggerArgs = {
+        triggerName: readTriggerArgs.triggerName as string
+      };
+      return await handleReadApexTrigger(conn, validatedArgs);
+    }
+
+    case "salesforce_write_apex_trigger": {
+      const writeTriggerArgs = args as Record<string, unknown>;
+      if (!writeTriggerArgs.operation || !writeTriggerArgs.triggerName || !writeTriggerArgs.body) {
+        throw new Error('operation, triggerName and body are required for write apex trigger');
+      }
+      const validatedArgs: WriteApexTriggerArgs = {
+        operation: writeTriggerArgs.operation as 'create' | 'update',
+        triggerName: writeTriggerArgs.triggerName as string,
+        body: writeTriggerArgs.body as string,
+        objectName: writeTriggerArgs.objectName as string,
+        apiVersion: writeTriggerArgs.apiVersion as string | undefined
+      };
+      return await handleWriteApexTrigger(conn, validatedArgs);
+    }
+
+    case "salesforce_execute_anonymous": {
+      const executeArgs = args as Record<string, unknown>;
+      if (!executeArgs.apexCode) {
+        throw new Error('apexCode is required for execute anonymous');
+      }
+      const validatedArgs: ExecuteAnonymousArgs = {
+        apexCode: executeArgs.apexCode as string
+      };
+      return await handleExecuteAnonymous(conn, validatedArgs);
+    }
+
+    case "salesforce_manage_debug_logs": {
+      const debugArgs = args as Record<string, unknown>;
+      if (!debugArgs.operation || !debugArgs.username) {
+        throw new Error('operation and username are required for manage debug logs');
+      }
+      const validatedArgs: ManageDebugLogsArgs = {
+        operation: debugArgs.operation as 'enable' | 'disable' | 'retrieve',
+        username: debugArgs.username as string,
+        logLevel: debugArgs.logLevel as ManageDebugLogsArgs['logLevel'],
+        expirationTime: debugArgs.expirationTime as number | undefined
+      };
+      return await handleManageDebugLogs(conn, validatedArgs);
+    }
 
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
 }
 
-<function_calls>
-<invoke name="TodoWrite">
-<parameter name="todos">[{"id": "improve-1", "content": "Add persistent token storage with database support", "status": "completed", "priority": "high"}, {"id": "improve-2", "content": "Implement token refresh middleware and error handling", "status": "completed", "priority": "high"}, {"id": "improve-3", "content": "Add rate limiting and security headers", "status": "completed", "priority": "high"}, {"id": "improve-4", "content": "Implement proper logging and monitoring", "status": "completed", "priority": "medium"}, {"id": "improve-5", "content": "Add health checks and graceful shutdown", "status": "completed", "priority": "medium"}, {"id": "improve-6", "content": "Improve error handling and user feedback", "status": "completed", "priority": "medium"}, {"id": "improve-7", "content": "Add configuration validation and environment checks", "status": "completed", "priority": "medium"}, {"id": "improve-8", "content": "Implement CSRF protection and security enhancements", "status": "completed", "priority": "low"}]
+// Start the server
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startServer();
+}
+

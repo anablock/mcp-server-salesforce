@@ -6,68 +6,73 @@
     "types": "dist/index.d.ts",
     "type": "module",
     "bin": {
-      "salesforce-connector": "dist/index.js"
+        "salesforce-connector": "dist/index.js"
     },
     "files": [
-      "dist"
+        "dist"
     ],
     "scripts": {
-      "build": "tsc && shx chmod +x dist/*.js",
-      "watch": "tsc --watch",
-      "start": "node dist/index.js",
-      "start:http": "node dist/http-server.js",
-      "start:production": "NODE_ENV=production node dist/production-server.js",
-      "start:general-http": "node dist/general-http-server.js",
-      "start:sso": "node dist/sso-server.js",
-      "start:sso-improved": "node dist/improved-sso-server.js",
-      "dev": "npm run build && npm run start:http",
-      "dev:sso": "npm run build && npm run start:sso",
-      "dev:sso-improved": "npm run build && npm run start:sso-improved",
-      "dev:http": "npm run build && npm run start:http",
-      "dev:production": "npm run build && NODE_ENV=development npm run start:production",
-      "dev:general-http": "npm run build && npm run start:general-http",
-      "heroku-postbuild": "npm run build",
-      "railway-postbuild": "npm run build"
+        "build": "echo 'Using existing build files' && shx chmod +x dist/*.js",
+        "watch": "tsc --watch",
+        "start": "node dist/index.js",
+        "start:http": "node dist/http-server.js",
+        "start:production": "NODE_ENV=production node dist/production-server.js",
+        "start:general-http": "node dist/general-http-server.js",
+        "start:sso": "node dist/sso-server.cjs",
+        "start:sso-improved": "node dist/improved-sso-server.cjs",
+        "dev": "npm run build && npm run start:http",
+        "dev:sso": "npm run build && npm run start:sso",
+        "dev:sso-improved": "npm run build && npm run start:sso-improved",
+        "dev:http": "npm run build && npm run start:http",
+        "dev:production": "npm run build && NODE_ENV=development npm run start:production",
+        "dev:general-http": "npm run build && npm run start:general-http",
+        "heroku-postbuild": "npm run build",
+        "railway-postbuild": "npm run build",
+        "test:ux": "node test-ux.js",
+        "test:ux:headless": "node test-ux.js --headless",
+        "test:ux:advanced": "node advanced-ux-test.js",
+        "test:ux:all": "npm run test:ux && npm run test:ux:advanced"
     },
     "engines": {
-      "node": ">=18.0.0",
-      "npm": ">=8.0.0"
+        "node": ">=18.0.0",
+        "npm": ">=8.0.0"
     },
     "keywords": [
-      "mcp",
-      "salesforce",
-      "claude",
-      "ai"
+        "mcp",
+        "salesforce",
+        "claude",
+        "ai"
     ],
     "author": "tsmztech",
     "license": "MIT",
     "dependencies": {
-      "@modelcontextprotocol/sdk": "0.5.0",
-      "dotenv": "^16.3.1",
-      "jsforce": "^1.11.0",
-      "express": "^4.18.2",
-      "cors": "^2.8.5",
-      "express-session": "^1.17.3",
-      "uuid": "^9.0.1",
-      "node-fetch": "^3.3.2",
-      "helmet": "^7.1.0",
-      "express-rate-limit": "^7.1.5",
-      "pg": "^8.11.3",
-      "connect-pg-simple": "^9.0.1",
-      "winston": "^3.11.0",
-      "joi": "^17.11.0",
-      "crypto-js": "^4.2.0"
+        "@modelcontextprotocol/sdk": "0.5.0",
+        "connect-pg-simple": "^9.0.1",
+        "cors": "^2.8.5",
+        "crypto-js": "^4.2.0",
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "express-rate-limit": "^7.1.5",
+        "express-session": "^1.17.3",
+        "helmet": "^7.1.0",
+        "joi": "^17.11.0",
+        "jsforce": "^1.11.0",
+        "node-fetch": "^3.3.2",
+        "pg": "^8.11.3",
+        "uuid": "^9.0.1",
+        "winston": "^3.11.0"
     },
     "devDependencies": {
-      "@types/node": "^22.10.1",
-      "@types/express": "^4.17.21",
-      "@types/cors": "^2.8.17",
-      "@types/express-session": "^1.17.7",
-      "@types/uuid": "^9.0.7",
-      "@types/pg": "^8.10.9",
-      "@types/crypto-js": "^4.2.1",
-      "typescript": "^5.7.2",
-      "shx": "^0.3.4"
+        "@types/cors": "^2.8.17",
+        "@types/crypto-js": "^4.2.1",
+        "@types/express": "^4.17.21",
+        "@types/express-session": "^1.17.7",
+        "@types/node": "^22.10.1",
+        "@types/pg": "^8.10.9",
+        "@types/puppeteer": "^5.4.7",
+        "@types/uuid": "^9.0.7",
+        "puppeteer-core": "^24.16.2",
+        "shx": "^0.3.4",
+        "typescript": "^5.7.2"
     }
-  }
-  
+}

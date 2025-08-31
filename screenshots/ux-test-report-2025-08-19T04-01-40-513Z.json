@@ -1,0 +1,96 @@
+{
+  "timestamp": "2025-08-19T04:01:40.513Z",
+  "baseUrl": "https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com",
+  "testUserId": "test_user_123",
+  "results": [
+    {
+      "test": "health-check",
+      "success": true,
+      "status": 200,
+      "statusText": "OK",
+      "headers": {
+        "access-control-allow-credentials": "true",
+        "content-length": "204",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Tue, 19 Aug 2025 04:01:26 GMT",
+        "etag": "W/\"cc-16MxhxGf1yBc44QblTKqLsSjmBQ\"",
+        "nel": "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}",
+        "report-to": "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=3SpsLWzoxAwyRzK9RUSJoIf%2BjsLYcHGOr382biB0Q4g%3D\\u0026sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add\\u0026ts=1755576086\"}],\"max_age\":3600}",
+        "reporting-endpoints": "heroku-nel=\"https://nel.heroku.com/reports?s=3SpsLWzoxAwyRzK9RUSJoIf%2BjsLYcHGOr382biB0Q4g%3D&sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add&ts=1755576086\"",
+        "server": "Heroku",
+        "vary": "Origin",
+        "via": "1.1 heroku-router",
+        "x-powered-by": "Express"
+      },
+      "body": "{\n  \"status\": \"ok\",\n  \"timestamp\": \"2025-08-19T04:01:26.594Z\",\n  \"version\": \"0.0.2\",\n  \"uptime\": 82,\n  \"uptimeHuman\": \"0h 1m 22s\",\n  \"memory\": {\n    \"used\": 22,\n    \"total\": 54,\n    \"external\": 4,\n    \"unit\": \"MB\"\n  },\n  \"connections\": {\n    \"active\": 0,\n    \"total\": 0\n  }\n}"
+    },
+    {
+      "test": "auth-status",
+      "success": true,
+      "status": 200,
+      "statusText": "OK",
+      "headers": {
+        "access-control-allow-credentials": "true",
+        "content-length": "19",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Tue, 19 Aug 2025 04:01:26 GMT",
+        "etag": "W/\"13-9sHNQePZCK1Rt8BbUMB/qAcgKjU\"",
+        "nel": "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}",
+        "report-to": "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=3SpsLWzoxAwyRzK9RUSJoIf%2BjsLYcHGOr382biB0Q4g%3D\\u0026sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add\\u0026ts=1755576086\"}],\"max_age\":3600}",
+        "reporting-endpoints": "heroku-nel=\"https://nel.heroku.com/reports?s=3SpsLWzoxAwyRzK9RUSJoIf%2BjsLYcHGOr382biB0Q4g%3D&sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add&ts=1755576086\"",
+        "server": "Heroku",
+        "vary": "Origin",
+        "via": "1.1 heroku-router",
+        "x-powered-by": "Express"
+      },
+      "body": "{\n  \"connected\": false\n}"
+    },
+    {
+      "test": "success-page",
+      "success": true,
+      "title": "Salesforce Connected",
+      "url": "https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com/auth/success",
+      "screenshot": "/Users/vukdukic/Development/mcp-server-salesforce/screenshots/2025-08-19T04-01-29-878Z-success-page.png"
+    },
+    {
+      "test": "oauth-flow",
+      "success": true,
+      "redirectUrl": "https://login.salesforce.com/?startURL=%2Fsetup%2Fsecur%2FRemoteAccessAuthorizationPage.apexp%3Fsource%3DCAAAAZjFo5ueMDAwMDAwMDAwMDAwMDAwAAABAK0L5Y1sSjwrMG9WNywv88iW-nJ5LOoowYNiAVyK1fKpZecpVHmdERNrLF0tduBuca-vJNy1BjylZS_9tVQb3krgqTyI9-1ZiIq-3Mrqg8dSnI8wjJOxto0VtX7U9SKuBeYEV1njDWaWlXnljZVkHPnMUKuQPmyXQi7Z03PvmVBGbPwVutu7W5lUa0sL11vhclrcDjsjJK3UdUIYDw0WYrgPUup42L2VzT7N2pF_zcQ7QWAJxSx-KtcMK137Voj_xUw52JWaIbnX1jgF6MYKudj51bxXG4PvcOlRqs9ShlCezAiX3JCfWDUnmqFyOjnQ9nggKFQO0tC8RkLGhZrqu3HjvexbU5Jy8kwcI9mAVGhSFz1gTwaj-9gj9JgqXK88wu-rk5UDCYlhADAxMqV3tNk-6kkSoNYNKkw0AGvPPVqdqmRdkDbSESdyIkjk6z0-c-pIJ5KdcUGWcSDnnvMFX4sx_iw5Rn2jFxSozMUlgipMstQ_T0vhYjWo93pp3WS7swbU_ENiiMz_6FlD--VgmoPIQUYD4nJbhBLmWHbMb6Err67dEGM49ZeG93c3P3cM2hfc-sz5Ei1XHqO7TuvspOX6GIcGBEECCSr_TVlSm73eABgdLG3sJBlpC0FXEl106Dd4y-R22yCe3zhrElfh0eUTeRQmw8rcxPKXE2-MC4UYxTUjDLxCQvpnanyE5lK5j3KNq2q80lJPFZs2Ge_F05lgILjj-Lir0UK5wKsBNOwmQGDMxWA_KF00Ynil5ZA7J5OdakPnUlsM8bCqJvBv9XseawWXDC4UloO22ias0FNu8ZTq4jQctG2fdIn-a5iczDCgjVqSKLSNMyaNaJ0lxms%253D&sdtd=1",
+      "title": "Login | Salesforce"
+    },
+    {
+      "test": "404-handling",
+      "success": true,
+      "title": "Error",
+      "url": "https://vuk-salesforce-mcp-acef9db54bd2.herokuapp.com/nonexistent-page",
+      "screenshot": "/Users/vukdukic/Development/mcp-server-salesforce/screenshots/2025-08-19T04-01-40-034Z-404-handling.png"
+    },
+    {
+      "test": "mcp-tools",
+      "success": true,
+      "status": 404,
+      "statusText": "Not Found",
+      "headers": {
+        "access-control-allow-credentials": "true",
+        "content-length": "144",
+        "content-security-policy": "default-src 'none'",
+        "content-type": "text/html; charset=utf-8",
+        "date": "Tue, 19 Aug 2025 04:01:40 GMT",
+        "nel": "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}",
+        "report-to": "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=yGQxcFCZYM9LVYvAOJWvkOspbKBYq0EOgQzdHyejnm0%3D\\u0026sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add\\u0026ts=1755576100\"}],\"max_age\":3600}",
+        "reporting-endpoints": "heroku-nel=\"https://nel.heroku.com/reports?s=yGQxcFCZYM9LVYvAOJWvkOspbKBYq0EOgQzdHyejnm0%3D&sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add&ts=1755576100\"",
+        "server": "Heroku",
+        "vary": "Origin",
+        "via": "1.1 heroku-router",
+        "x-content-type-options": "nosniff",
+        "x-powered-by": "Express"
+      },
+      "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /tools</pre>\n</body>\n</html>\n"
+    }
+  ],
+  "summary": {
+    "totalTests": 6,
+    "successful": 6,
+    "failed": 0
+  }
+}

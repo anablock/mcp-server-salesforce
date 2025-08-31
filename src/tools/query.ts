@@ -163,6 +163,12 @@ export async function handleQueryRecords(conn: any, args: QueryArgs) {
         type: "text",
         text: `Query returned ${result.records.length} records:\n\n${formattedRecords}`
       }],
+      records: result.records,
+      metadata: {
+        totalSize: result.totalSize,
+        done: result.done,
+        soql: soql
+      },
       isError: false,
     };
   } catch (error) {
