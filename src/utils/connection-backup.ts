@@ -1,4 +1,3 @@
-// Use JSForce with proper ES module import
 import jsforce from 'jsforce';
 import https from 'https';
 import querystring from 'querystring';
@@ -83,7 +82,7 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
         req.end();
       });
       
-      // Create connection with the access token - jsforce is the constructor itself
+      // Create connection with the access token
       const conn = new jsforce({
         instanceUrl: tokenResponse.instance_url,
         accessToken: tokenResponse.access_token
@@ -102,7 +101,7 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
       
       console.error('Connecting to Salesforce using Username/Password authentication');
       
-      // Create connection with login URL - jsforce is the constructor itself
+      // Create connection with login URL
       const conn = new jsforce({ loginUrl });
       
       await conn.login(
