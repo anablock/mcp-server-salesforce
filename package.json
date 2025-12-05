@@ -9,7 +9,8 @@
         "salesforce-connector": "dist/index.js"
     },
     "files": [
-        "dist"
+        "dist",
+        "vapi-wrapper-salesforce.js"
     ],
     "scripts": {
         "build": "tsc",
@@ -17,6 +18,7 @@
         "start": "node dist/index.js",
         "start:http": "node dist/http-server.js",
         "start:production": "NODE_ENV=production node dist/production-server.js",
+        "start:vapi-wrapper": "node vapi-wrapper-salesforce.js",
         "start:general-http": "node dist/general-http-server.js",
         "start:sso": "node dist/sso-server.cjs",
         "start:sso-improved": "node dist/improved-sso-server.cjs",
