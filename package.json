@@ -12,7 +12,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "echo 'Using existing build files' && shx chmod +x dist/*.js",
+        "build": "tsc --outDir dist --module commonjs --target es2018",
         "watch": "tsc --watch",
         "start": "node dist/index.js",
         "start:http": "node dist/http-server.js",
