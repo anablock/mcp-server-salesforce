@@ -639,6 +639,113 @@ app.post('/mcp', async (req, res) => {
         });
     }
 });
+// REST API endpoints for Vapi Function Tools
+app.post('/tools/salesforce_query_records', async (req, res) => {
+    try {
+        console.log(`[${new Date().toISOString()}] Executing tool: salesforce_query_records`);
+        const { objectName, fields, whereClause, orderBy, limit } = req.body;
+        if (!objectName || !Array.isArray(fields)) {
+            return res.status(400).json({
+                error: 'objectName and fields array are required for query'
+            });
+        }
+        const conn = await createSalesforceConnection();
+        const validatedArgs = {
+            objectName,
+            fields,
+            whereClause,
+            orderBy,
+            limit
+        };
+        const result = await handleQueryRecords(conn, validatedArgs);
+        res.json({
+            success: !result.isError,
+            data: result
+        });
+    }
+    catch (error) {
+        console.log(`[${new Date().toISOString()}] Error executing tool salesforce_query_records:`, error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
+app.post('/tools/salesforce_search_all', async (req, res) => {
+    try {
+        console.log(`[${new Date().toISOString()}] Executing tool: salesforce_search_all`);
+        const { searchTerm, objects, searchIn, updateable, viewable } = req.body;
+        if (!searchTerm || !Array.isArray(objects)) {
+            return res.status(400).json({
+                error: 'searchTerm and objects array are required for search'
+            });
+        }
+        const conn = await createSalesforceConnection();
+        const validatedArgs = {
+            searchTerm,
+            objects,
+            searchIn,
+            updateable,
+            viewable
+        };
+        const result = await handleSearchAll(conn, validatedArgs);
+        res.json({
+            success: !result.isError,
+            data: result
+        });
+    }
+    catch (error) {
+        console.log(`[${new Date().toISOString()}] Error executing tool salesforce_search_all:`, error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
+app.post('/tools/salesforce_describe_object', async (req, res) => {
+    try {
+        console.log(`[${new Date().toISOString()}] Executing tool: salesforce_describe_object`);
+        const { objectName } = req.body;
+        if (!objectName) {
+            return res.status(400).json({
+                error: 'objectName is required'
+            });
+        }
+        const conn = await createSalesforceConnection();
+        const result = await handleDescribeObject(conn, objectName);
+        res.json({
+            success: !result.isError,
+            data: result
+        });
+    }
+    catch (error) {
+        console.log(`[${new Date().toISOString()}] Error executing tool salesforce_describe_object:`, error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
+app.post('/tools/salesforce_search_objects', async (req, res) => {
+    try {
+        console.log(`[${new Date().toISOString()}] Executing tool: salesforce_search_objects`);
+        const { searchPattern } = req.body;
+        if (!searchPattern) {
+            return res.status(400).json({
+                error: 'searchPattern is required'
+            });
+        }
+        const conn = await createSalesforceConnection();
+        const result = await handleSearchObjects(conn, searchPattern);
+        res.json({
+            success: !result.isError,
+            data: result
+        });
+    }
+    catch (error) {
+        console.log(`[${new Date().toISOString()}] Error executing tool salesforce_search_objects:`, error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
 // Error handling middleware
 app.use((error, req, res, next) => {
     console.error(`[${new Date().toISOString()}] Unhandled error:`, error);
