@@ -54,6 +54,25 @@ if (isProduction) {
   });
 }
 
+// MCP authentication middleware
+app.use('/mcp', (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const expectedToken = 'Bearer salesforce-mcp-token-2024'; // Use your token
+  
+  if (!authHeader || authHeader !== expectedToken) {
+    return res.status(401).json({
+      jsonrpc: '2.0',
+      id: null,
+      error: {
+        code: -32600,
+        message: 'Invalid or missing authentication token'
+      }
+    });
+  }
+  
+  next();
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
