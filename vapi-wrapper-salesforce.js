@@ -8,6 +8,7 @@
 import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
+import { randomUUID } from 'crypto';
 
 const app = express();
 
@@ -27,9 +28,39 @@ app.use((req, res, next) => {
 });
 
 /**
+ * Generate a unique request ID for JSON-RPC calls
+ * Uses crypto.randomUUID() with fallbacks for older Node versions
+ * @returns {string} A unique string identifier
+ */
+function generateRequestId() {
+  try {
+    // Primary: Use crypto.randomUUID() (Node 16+)
+    return randomUUID();
+  } catch (error) {
+    try {
+      // Fallback 1: Use require('crypto').randomUUID() for older imports
+      const crypto = require('crypto');
+      if (crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+    } catch (fallbackError) {
+      // Ignored - proceed to next fallback
+    }
+    
+    // Fallback 2: Generate UUID v4 manually
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+}
+
+/**
  * Helper function to call Salesforce MCP server with JSON-RPC format
  */
 async function callSalesforceMcpTool(toolName, toolArguments) {
+  const requestId = generateRequestId();
   const mcpRequest = {
     jsonrpc: "2.0",
     method: "tools/call",
@@ -37,7 +68,7 @@ async function callSalesforceMcpTool(toolName, toolArguments) {
       name: toolName,
       arguments: toolArguments
     },
-    id: Date.now()
+    id: requestId
   };
 
   const headers = {
@@ -45,7 +76,7 @@ async function callSalesforceMcpTool(toolName, toolArguments) {
     'Accept': 'application/json'
   };
 
-  console.log('Calling Salesforce MCP server:', toolName, toolArguments);
+  console.log(`Calling Salesforce MCP server: ${toolName} (Request ID: ${requestId})`, toolArguments);
 
   // Set up timeout for the API call
   const controller = new AbortController();
@@ -108,6 +139,35 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     service: 'vapi-salesforce-mcp-wrapper',
     mcpServer: SALESFORCE_MCP_SERVER_URL,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Test endpoint to verify request ID generation and correlation
+app.get('/test-request-id', (req, res) => {
+  const testIds = [];
+  
+  // Generate 10 test IDs to demonstrate uniqueness
+  for (let i = 0; i < 10; i++) {
+    testIds.push({
+      sequence: i + 1,
+      id: generateRequestId(),
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  // Check for duplicates
+  const uniqueIds = new Set(testIds.map(item => item.id));
+  
+  res.json({
+    status: 'success',
+    message: 'Request ID generation test',
+    generated: testIds.length,
+    unique: uniqueIds.size,
+    duplicates: testIds.length - uniqueIds.size,
+    allUnique: uniqueIds.size === testIds.length,
+    sampleIds: testIds,
+    idFormat: 'UUID v4 string',
     timestamp: new Date().toISOString()
   });
 });
@@ -329,5 +389,6 @@ app.listen(PORT, () => {
   console.log(`  POST http://localhost:${PORT}/api/salesforce-search-objects`);
   console.log(`  POST http://localhost:${PORT}/api/salesforce-apex`);
   console.log(`  GET  http://localhost:${PORT}/health`);
+  console.log(`  GET  http://localhost:${PORT}/test-request-id`);
   console.log('=================================================\n');
 });

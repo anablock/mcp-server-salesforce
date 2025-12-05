@@ -4,12 +4,22 @@ import https from 'https';
 import querystring from 'querystring';
 import { ConnectionType } from '../types/connection.js';
 import { tokenStore } from './tokenStore.js';
+// Simple connection cache for production
+let cachedConnection = null;
+let connectionExpiry = 0;
+const CONNECTION_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 /**
  * Creates a Salesforce connection using either username/password or OAuth 2.0 Client Credentials Flow
  * @param config Optional connection configuration
  * @returns Connected jsforce Connection instance
  */
 export async function createSalesforceConnection(config) {
+    // Check cache first for production performance
+    const now = Date.now();
+    if (cachedConnection && now < connectionExpiry) {
+        console.error('Using cached Salesforce connection');
+        return cachedConnection;
+    }
     // Determine connection type from environment variables or config
     const connectionType = config?.type ||
         process.env.SALESFORCE_CONNECTION_TYPE ||
@@ -78,6 +88,9 @@ export async function createSalesforceConnection(config) {
                 instanceUrl: tokenResponse.instance_url,
                 accessToken: tokenResponse.access_token
             });
+            // Cache the connection for production performance
+            cachedConnection = conn;
+            connectionExpiry = now + CONNECTION_CACHE_DURATION;
             return conn;
         }
         else {
@@ -88,10 +101,15 @@ export async function createSalesforceConnection(config) {
             if (!username || !password) {
                 throw new Error('SALESFORCE_USERNAME and SALESFORCE_PASSWORD are required for Username/Password authentication');
             }
-            console.error('Connecting to Salesforce using Username/Password authentication');
+            console.error('Connecting to Salesforce using Username/Password authentication - starting connection...');
             // CORRECT: Use jsforce.Connection constructor
             const conn = new jsforce.Connection({ loginUrl });
+            console.error('Attempting Salesforce login...');
             await conn.login(username, password + (token || ''));
+            console.error('Salesforce login successful!');
+            // Cache the connection for production performance
+            cachedConnection = conn;
+            connectionExpiry = now + CONNECTION_CACHE_DURATION;
             return conn;
         }
     }
