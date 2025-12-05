@@ -117,32 +117,35 @@ async function callSalesforceMcpTool(toolName, toolArguments) {
     if (result.result) {
       const toolResponse = result.result;
       
+      // Extract message from all content segments or use default
+      const message = toolResponse.content && toolResponse.content.length > 0
+        ? toolResponse.content
+            .filter(item => item.type === 'text' && item.text)
+            .map(item => item.text)
+            .join('\n') || 'Operation completed successfully'
+        : 'Operation completed successfully';
+      
       // Check if it's an error response
       if (toolResponse.isError) {
-        const errorMessage = toolResponse.content && toolResponse.content[0] 
-          ? toolResponse.content[0].text 
-          : 'Unknown error from Salesforce';
-        throw new Error(errorMessage);
+        throw new Error(message);
       }
       
       // Return structured response for Vapi
-      const response = {
+      const vapiResponse = {
         success: true,
-        message: toolResponse.content && toolResponse.content[0] 
-          ? toolResponse.content[0].text 
-          : 'Operation completed successfully'
+        message: message
       };
       
       // Include additional data if available
       if (toolResponse.records) {
-        response.records = toolResponse.records;
+        vapiResponse.records = toolResponse.records;
       }
       
       if (toolResponse.metadata) {
-        response.metadata = toolResponse.metadata;
+        vapiResponse.metadata = toolResponse.metadata;
       }
       
-      return response;
+      return vapiResponse;
     }
 
     throw new Error('Invalid response structure from Salesforce MCP server');
