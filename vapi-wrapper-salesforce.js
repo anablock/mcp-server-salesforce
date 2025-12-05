@@ -111,13 +111,41 @@ async function callSalesforceMcpTool(toolName, toolArguments) {
     }
 
     // Extract tool response from MCP result
-    if (result.result && result.result.content && result.result.content[0]) {
-      const contentText = result.result.content[0].text;
-      try {
-        return JSON.parse(contentText);
-      } catch {
-        return { success: true, data: contentText };
+    // The MCP server returns: { jsonrpc: "2.0", id, result: toolResponse }
+    // Where toolResponse has: { content: [{type: "text", text: "..."}], records: [...], metadata: {...}, isError: boolean }
+    
+    if (result.result) {
+      const toolResponse = result.result;
+      
+      // Extract message from all content segments or use default
+      const message = toolResponse.content && toolResponse.content.length > 0
+        ? toolResponse.content
+            .filter(item => item.type === 'text' && item.text)
+            .map(item => item.text)
+            .join('\n') || 'Operation completed successfully'
+        : 'Operation completed successfully';
+      
+      // Check if it's an error response
+      if (toolResponse.isError) {
+        throw new Error(message);
       }
+      
+      // Return structured response for Vapi
+      const vapiResponse = {
+        success: true,
+        message: message
+      };
+      
+      // Include additional data if available
+      if (toolResponse.records) {
+        vapiResponse.records = toolResponse.records;
+      }
+      
+      if (toolResponse.metadata) {
+        vapiResponse.metadata = toolResponse.metadata;
+      }
+      
+      return vapiResponse;
     }
 
     throw new Error('Invalid response structure from Salesforce MCP server');
