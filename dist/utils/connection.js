@@ -1,8 +1,8 @@
 const jsforce = require('jsforce');
+const https = require('https');
+const querystring = require('querystring');
 import { ConnectionType } from '../types/connection.js';
 import { tokenStore } from './tokenStore.js';
-import https from 'https';
-import querystring from 'querystring';
 /**
  * Creates a Salesforce connection using either username/password or OAuth 2.0 Client Credentials Flow
  * @param config Optional connection configuration
