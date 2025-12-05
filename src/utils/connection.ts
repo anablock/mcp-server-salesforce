@@ -1,4 +1,4 @@
-import jsforce from 'jsforce';
+const jsforce = require('jsforce');
 import { ConnectionType, ConnectionConfig } from '../types/connection.js';
 import { tokenStore, UserConnection } from './tokenStore.js';
 import https from 'https';
@@ -46,7 +46,7 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
       });
       
       // Make the token request
-      const tokenResponse = await new Promise<jsforce>((resolve, reject) => {
+      const tokenResponse = await new Promise<any>((resolve, reject) => {
         const req = https.request({
           method: 'POST',
           hostname: tokenUrl.hostname,
@@ -83,7 +83,7 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
       });
       
       // Create connection with the access token
-      const conn = new jsforce({
+      const conn = new jsforce.Connection({
         instanceUrl: tokenResponse.instance_url,
         accessToken: tokenResponse.access_token
       });
@@ -102,7 +102,7 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
       console.error('Connecting to Salesforce using Username/Password authentication');
       
       // Create connection with login URL
-      const conn = new jsforce({ loginUrl });
+      const conn = new jsforce.Connection({ loginUrl });
       
       await conn.login(
         username,
@@ -122,14 +122,14 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
  * @param userId User identifier
  * @returns Connected jsforce Connection instance
  */
-export async function createUserSalesforceConnection(userId: string): Promise<jsforce> {
+export async function createUserSalesforceConnection(userId: string): Promise<any> {
   const userConnection = tokenStore.getConnectionByUserId(userId);
   
   if (!userConnection) {
     throw new Error(`No Salesforce connection found for user: ${userId}`);
   }
 
-  const conn = new jsforce({
+  const conn = new jsforce.Connection({
     instanceUrl: userConnection.tokens.instanceUrl,
     accessToken: userConnection.tokens.accessToken,
     refreshToken: userConnection.tokens.refreshToken
@@ -151,7 +151,7 @@ export async function createUserSalesforceConnection(userId: string): Promise<js
  * @param sessionId Session identifier
  * @returns Connected jsforce Connection instance
  */
-export async function createSessionSalesforceConnection(sessionId: string): Promise<jsforce> {
+export async function createSessionSalesforceConnection(sessionId: string): Promise<any> {
   const userConnection = tokenStore.getConnectionBySession(sessionId);
   
   if (!userConnection) {
