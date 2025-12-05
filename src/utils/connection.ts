@@ -31,7 +31,7 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
         throw new Error('SALESFORCE_CLIENT_ID and SALESFORCE_CLIENT_SECRET are required for OAuth 2.0 Client Credentials Flow');
       }
       
-      console.error('Connecting to Salesforce using OAuth 2.0 Client Credentials Flow');
+      console.error('Connecting to Salesforce using OAuth 2.0 Client Credentials Flow - jsforce.Connection pattern');
       
       // Get the instance URL from environment variable or config
       const instanceUrl = loginUrl;
