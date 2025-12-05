@@ -73,7 +73,8 @@ async function callSalesforceMcpTool(toolName, toolArguments) {
 
   const headers = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Accept': 'application/json',
+    'Authorization': 'Bearer salesforce-mcp-token-2024'
   };
 
   console.log(`Calling Salesforce MCP server: ${toolName} (Request ID: ${requestId})`, toolArguments);
