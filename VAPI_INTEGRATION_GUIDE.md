@@ -412,15 +412,15 @@ Test each Function Tool independently:
 
 ### **2. Integration Testing Scenarios**
 
-**Scenario 1: Recent Records**
+### Scenario 1: Recent Records
 - User: "Show me recent accounts"
 - Expected: salesforce_query_records call with CreatedDate DESC
 
-**Scenario 2: Search by Name**
+### Scenario 2: Search by Name
 - User: "Find John Smith"
 - Expected: salesforce_search_all across Contact/Lead objects
 
-**Scenario 3: Object Discovery**
+### Scenario 3: Object Discovery
 - User: "What fields does Account have?"
 - Expected: salesforce_describe_object for Account
 
