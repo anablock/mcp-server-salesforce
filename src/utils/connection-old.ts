@@ -1,4 +1,4 @@
-// Correct JSForce import and usage pattern
+// Use JSForce with proper ES module import
 import jsforce from 'jsforce';
 import https from 'https';
 import querystring from 'querystring';
@@ -83,8 +83,8 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
         req.end();
       });
       
-      // CORRECT: Use jsforce.Connection constructor
-      const conn = new (jsforce as any).Connection({
+      // Create connection with the access token - jsforce is the constructor itself
+      const conn = new jsforce({
         instanceUrl: tokenResponse.instance_url,
         accessToken: tokenResponse.access_token
       });
@@ -102,8 +102,8 @@ export async function createSalesforceConnection(config?: ConnectionConfig) {
       
       console.error('Connecting to Salesforce using Username/Password authentication');
       
-      // CORRECT: Use jsforce.Connection constructor
-      const conn = new (jsforce as any).Connection({ loginUrl });
+      // Create connection with login URL - jsforce is the constructor itself
+      const conn = new jsforce({ loginUrl });
       
       await conn.login(
         username,
@@ -130,8 +130,7 @@ export async function createUserSalesforceConnection(userId: string): Promise<an
     throw new Error(`No Salesforce connection found for user: ${userId}`);
   }
 
-  // CORRECT: Use jsforce.Connection constructor
-  const conn = new (jsforce as any).Connection({
+  const conn = new jsforce({
     instanceUrl: userConnection.tokens.instanceUrl,
     accessToken: userConnection.tokens.accessToken,
     refreshToken: userConnection.tokens.refreshToken
