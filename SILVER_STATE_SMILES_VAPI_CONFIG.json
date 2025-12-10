@@ -1,0 +1,251 @@
+{
+  "assistant": {
+    "name": "Silver State Smiles Appointment Assistant",
+    "model": {
+      "provider": "openai",
+      "model": "gpt-4-turbo-preview",
+      "temperature": 0.3,
+      "maxTokens": 1000,
+      "emotionRecognition": true,
+      "systemMessage": "You are a friendly, professional voice AI assistant for Silver State Smiles dental practice. You help patients schedule dental appointments, collect preliminary information, and provide basic practice information. You speak in a warm, caring tone appropriate for healthcare, and maintain patient confidentiality at all times.\n\n## Opening Greeting\nAlways start calls with: 'Hi! Thank you for calling Silver State Smiles. I'm your dental appointment assistant, and I'm here to help you schedule your visit with our team. What type of dental service are you interested in today?'\n\n## Available Dental Services\n- Family Dentistry: General dental care for all ages\n- Orthodontics: Braces, Invisalign, teeth straightening  \n- Dental Implants: Tooth replacement solutions\n- Invisalign: Clear aligner treatment\n- Dental Fillings: Cavity treatment and restoration\n- Crowns & Bridges: Tooth caps and replacement bridges\n- Cosmetic Dentistry: Aesthetic dental treatments\n- General Dentistry: Routine checkups, cleanings, preventive care\n\n## Silver State Smiles Locations\n- Las Vegas - Sahara: 7545 W Sahara Ave #200, Las Vegas, NV 89117\n- Las Vegas - Cheyenne: 10470 W Cheyenne Ave #110, Las Vegas, NV 89129\n- Las Vegas - Durango: 6080 S Durango Dr #100, Las Vegas, NV 89113  \n- North Las Vegas: 3073 W Craig Rd #102, North Las Vegas, NV 89032\n- Henderson - Stephanie: 3073 W Craig Rd #102, North Las Vegas, NV 89032\n- Henderson - Sunset: 1361 W Sunset Rd #100, Henderson, NV 89014\n\n## Conversation Guidelines\n1. Always use the standard greeting to open calls\n2. Ask what type of dental service they need\n3. Collect patient information conversationally\n4. Handle pain/emergency situations with priority\n5. Be empathetic about dental anxiety\n6. Confirm all details before booking\n7. Provide clear next steps\n\n## Required Information to Collect\n- Patient first and last name\n- Email address\n- Phone number  \n- Who appointment is for\n- Preferred service type\n- Preferred location\n- Pain level (if applicable)\n- Main concern/reason for visit\n- Insurance/payment preference\n- Preferred appointment time\n\nSpeak naturally, be patient with responses, and always prioritize patient comfort and care."
+    },
+    "voice": {
+      "provider": "elevenlabs",
+      "voiceId": "pNInz6obpgDQGcFmaJgB", 
+      "stability": 0.5,
+      "similarityBoost": 0.75,
+      "style": 1,
+      "useSpeakerBoost": true
+    },
+    "backgroundSound": "office",
+    "backgroundDenoisingEnabled": true,
+    "endCallMessage": "Thank you for choosing Silver State Smiles! You'll receive a confirmation shortly. Have a great day!",
+    "endCallPhrases": [
+      "goodbye",
+      "thank you goodbye", 
+      "that's all thank you",
+      "end call"
+    ]
+  },
+  "functionCalls": [
+    {
+      "type": "function",
+      "function": {
+        "name": "create_patient_appointment",
+        "description": "Create a new patient appointment for Silver State Smiles. Use this after collecting all required patient information and confirming appointment details.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "patientFirstName": {
+              "type": "string",
+              "description": "Patient's first name"
+            },
+            "patientLastName": {
+              "type": "string", 
+              "description": "Patient's last name"
+            },
+            "patientEmail": {
+              "type": "string",
+              "description": "Patient's email address"
+            },
+            "patientPhone": {
+              "type": "string",
+              "description": "Patient's phone number"
+            },
+            "bookingFor": {
+              "type": "string",
+              "description": "Who the appointment is for",
+              "examples": ["Myself", "My spouse", "My child"]
+            },
+            "serviceType": {
+              "type": "string",
+              "enum": [
+                "Family Dentistry",
+                "Orthodontics", 
+                "Dental Implants",
+                "Invisalign",
+                "Dental Fillings",
+                "Crowns & Bridges",
+                "Cosmetic Dentistry",
+                "General Dentistry"
+              ],
+              "description": "Type of dental service requested"
+            },
+            "location": {
+              "type": "string",
+              "enum": [
+                "Las Vegas - Sahara 7545 W Sahara Ave #200, Las Vegas, NV 89117",
+                "Las Vegas - Cheyenne 10470 W Cheyenne Ave #110, Las Vegas, NV 89129",
+                "Las Vegas - Durango 6080 S Durango Dr #100, Las Vegas, NV 89113",
+                "North Las Vegas 3073 W Craig Rd #102, North Las Vegas, NV 89032",
+                "Henderson - Stephanie 3073 W Craig Rd #102, North Las Vegas, NV 89032",
+                "Henderson - Sunset 1361 W Sunset Rd #100, Henderson, NV 89014"
+              ],
+              "description": "Silver State Smiles office location"
+            },
+            "appointmentDateTime": {
+              "type": "string",
+              "description": "Appointment date and time in ISO format",
+              "examples": ["2025-12-15T10:00:00-08:00"]
+            },
+            "painLevel": {
+              "type": "number",
+              "description": "Pain level from 0-10 if patient has dental pain",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "chiefComplaint": {
+              "type": "string",
+              "description": "Main reason for visit or primary concern"
+            },
+            "paymentMethod": {
+              "type": "string", 
+              "description": "Payment method or insurance information"
+            },
+            "specialNotes": {
+              "type": "string",
+              "description": "Special accommodations or additional notes"
+            }
+          },
+          "required": ["patientFirstName", "patientLastName", "patientEmail", "serviceType", "location", "appointmentDateTime"]
+        }
+      },
+      "server": {
+        "url": "https://web-production-1bd9.up.railway.app/mcp",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer salesforce-mcp-token-2024",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "tools/call",
+          "params": {
+            "name": "create_patient_appointment",
+            "arguments": "{{functionCall.parameters}}"
+          },
+          "id": 1
+        },
+        "timeoutSeconds": 30
+      }
+    },
+    {
+      "type": "function", 
+      "function": {
+        "name": "search_patient_appointments",
+        "description": "Search for existing patient appointments by name, email, or phone. Use this to check for existing appointments before creating new ones.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "searchTerm": {
+              "type": "string",
+              "description": "Search term - patient name, email, or phone"
+            },
+            "searchType": {
+              "type": "string",
+              "enum": ["email", "name", "phone", "all"],
+              "description": "Type of search to perform",
+              "default": "all"
+            },
+            "includeUpcoming": {
+              "type": "boolean",
+              "description": "Include future appointments",
+              "default": true
+            },
+            "includePast": {
+              "type": "boolean",
+              "description": "Include past appointments", 
+              "default": false
+            },
+            "includeCanceled": {
+              "type": "boolean",
+              "description": "Include canceled appointments",
+              "default": false
+            }
+          },
+          "required": ["searchTerm"]
+        }
+      },
+      "server": {
+        "url": "https://web-production-1bd9.up.railway.app/mcp",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer salesforce-mcp-token-2024",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "tools/call",
+          "params": {
+            "name": "search_patient_appointments",
+            "arguments": "{{functionCall.parameters}}"
+          },
+          "id": 2
+        },
+        "timeoutSeconds": 20
+      }
+    }
+  ],
+  "serverUrl": "https://web-production-1bd9.up.railway.app",
+  "serverPath": "/mcp",
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-2",
+    "language": "en-US",
+    "smartFormat": true,
+    "keywords": [
+      "Silver State Smiles",
+      "dental appointment", 
+      "teeth cleaning",
+      "root canal",
+      "dental implant",
+      "orthodontics",
+      "Invisalign",
+      "dental filling",
+      "crown",
+      "bridge",
+      "cosmetic dentistry",
+      "family dentistry",
+      "Las Vegas",
+      "Henderson",
+      "North Las Vegas",
+      "Sahara",
+      "Cheyenne", 
+      "Durango",
+      "Stephanie",
+      "Sunset"
+    ]
+  },
+  "recordingEnabled": false,
+  "hipaaEnabled": true,
+  "clientMessages": [
+    "transcript",
+    "hang", 
+    "function-call",
+    "speech-update",
+    "metadata",
+    "conversation-update"
+  ],
+  "serverMessages": [
+    "conversation-update",
+    "function-call",
+    "hang",
+    "metadata"  
+  ],
+  "silenceTimeoutSeconds": 30,
+  "responseDelaySeconds": 1,
+  "llmRequestDelaySeconds": 0.1,
+  "numWordsToInterruptAssistant": 2,
+  "maxDurationSeconds": 600,
+  "voicemail": {
+    "enabled": true,
+    "message": "You've reached Silver State Smiles appointment scheduling. We're currently helping other patients. Please leave your name, phone number, and preferred appointment type, and we'll call you back within one business hour to schedule your appointment. Thank you!"
+  },
+  "dialKeypadFunctionCallEnabled": false,
+  "metadata": {
+    "practice": "Silver State Smiles",
+    "type": "dental_appointment_booking",
+    "version": "1.0",
+    "hipaa_compliant": true
+  }
+}

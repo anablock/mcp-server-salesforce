@@ -22,6 +22,8 @@ import { READ_APEX_TRIGGER, handleReadApexTrigger, ReadApexTriggerArgs } from ".
 import { WRITE_APEX_TRIGGER, handleWriteApexTrigger, WriteApexTriggerArgs } from "./tools/writeApexTrigger.js";
 import { EXECUTE_ANONYMOUS, handleExecuteAnonymous, ExecuteAnonymousArgs } from "./tools/executeAnonymous.js";
 import { MANAGE_DEBUG_LOGS, handleManageDebugLogs, ManageDebugLogsArgs } from "./tools/manageDebugLogs.js";
+import { patientAppointmentTool, handlePatientAppointment } from "./tools/patientAppointment.js";
+import { searchPatientAppointmentsTool, handleSearchPatientAppointments } from "./tools/searchPatientAppointments.js";
 
 dotenv.config();
 
@@ -52,7 +54,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     READ_APEX_TRIGGER,
     WRITE_APEX_TRIGGER,
     EXECUTE_ANONYMOUS,
-    MANAGE_DEBUG_LOGS
+    MANAGE_DEBUG_LOGS,
+    patientAppointmentTool,
+    searchPatientAppointmentsTool
   ],
 }));
 
@@ -277,6 +281,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
 
         return await handleManageDebugLogs(conn, validatedArgs);
+      }
+
+      case "create_patient_appointment": {
+        const result = await handlePatientAppointment(args);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case "search_patient_appointments": {
+        const result = await handleSearchPatientAppointments(args);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        };
       }
 
       default:

@@ -18,6 +18,8 @@ import { READ_APEX_TRIGGER, handleReadApexTrigger, ReadApexTriggerArgs } from ".
 import { WRITE_APEX_TRIGGER, handleWriteApexTrigger, WriteApexTriggerArgs } from "./tools/writeApexTrigger.js";
 import { EXECUTE_ANONYMOUS, handleExecuteAnonymous, ExecuteAnonymousArgs } from "./tools/executeAnonymous.js";
 import { MANAGE_DEBUG_LOGS, handleManageDebugLogs, ManageDebugLogsArgs } from "./tools/manageDebugLogs.js";
+import { patientAppointmentTool, handlePatientAppointment } from "./tools/patientAppointment.js";
+import { searchPatientAppointmentsTool, handleSearchPatientAppointments } from "./tools/searchPatientAppointments.js";
 
 dotenv.config();
 
@@ -48,7 +50,9 @@ app.get('/tools', (req, res) => {
     READ_APEX_TRIGGER,
     WRITE_APEX_TRIGGER,
     EXECUTE_ANONYMOUS,
-    MANAGE_DEBUG_LOGS
+    MANAGE_DEBUG_LOGS,
+    patientAppointmentTool,
+    searchPatientAppointmentsTool
   ];
 
   res.json({ tools });
@@ -261,6 +265,16 @@ app.post('/tools/:toolName', async (req, res) => {
         break;
       }
 
+      case "create_patient_appointment": {
+        result = await handlePatientAppointment(args);
+        break;
+      }
+
+      case "search_patient_appointments": {
+        result = await handleSearchPatientAppointments(args);
+        break;
+      }
+
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -363,7 +377,9 @@ app.post('/mcp', async (req, res) => {
         READ_APEX_TRIGGER,
         WRITE_APEX_TRIGGER,
         EXECUTE_ANONYMOUS,
-        MANAGE_DEBUG_LOGS
+        MANAGE_DEBUG_LOGS,
+        patientAppointmentTool,
+        searchPatientAppointmentsTool
       ];
 
       res.json({
@@ -560,6 +576,16 @@ app.post('/mcp', async (req, res) => {
             includeBody: args.includeBody
           };
           result = await handleManageDebugLogs(conn, validatedArgs);
+          break;
+        }
+
+        case "create_patient_appointment": {
+          result = await handlePatientAppointment(args);
+          break;
+        }
+
+        case "search_patient_appointments": {
+          result = await handleSearchPatientAppointments(args);
           break;
         }
 

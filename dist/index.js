@@ -17,6 +17,8 @@ import { READ_APEX_TRIGGER, handleReadApexTrigger } from "./tools/readApexTrigge
 import { WRITE_APEX_TRIGGER, handleWriteApexTrigger } from "./tools/writeApexTrigger.js";
 import { EXECUTE_ANONYMOUS, handleExecuteAnonymous } from "./tools/executeAnonymous.js";
 import { MANAGE_DEBUG_LOGS, handleManageDebugLogs } from "./tools/manageDebugLogs.js";
+import { patientAppointmentTool, handlePatientAppointment } from "./tools/patientAppointment.js";
+import { searchPatientAppointmentsTool, handleSearchPatientAppointments } from "./tools/searchPatientAppointments.js";
 dotenv.config();
 const server = new Server({
     name: "salesforce-mcp-server",
@@ -41,7 +43,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         READ_APEX_TRIGGER,
         WRITE_APEX_TRIGGER,
         EXECUTE_ANONYMOUS,
-        MANAGE_DEBUG_LOGS
+        MANAGE_DEBUG_LOGS,
+        patientAppointmentTool,
+        searchPatientAppointmentsTool
     ],
 }));
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -239,6 +243,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     includeBody: debugLogsArgs.includeBody
                 };
                 return await handleManageDebugLogs(conn, validatedArgs);
+            }
+            case "create_patient_appointment": {
+                const result = await handlePatientAppointment(args);
+                return {
+                    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                };
+            }
+            case "search_patient_appointments": {
+                const result = await handleSearchPatientAppointments(args);
+                return {
+                    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                };
             }
             default:
                 return {
