@@ -152,6 +152,7 @@ export async function handlePatientAppointment(args) {
             // Appointment Details
             Calendly__EventSubject__c: validatedInput.serviceType,
             Calendly__EventTypeName__c: validatedInput.serviceType,
+            Calendly__EventTypeSlug__c: validatedInput.serviceType.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'and'),
             Calendly__EventTypeKind__c: 'OneOnOne',
             Calendly__EventTypeDuration__c: validatedInput.eventDurationMinutes,
             Calendly__EventStartTime__c: appointmentStart.toISOString(),
@@ -192,9 +193,12 @@ export async function handlePatientAppointment(args) {
                 (validatedInput.chiefComplaint ? `Chief Complaint: ${validatedInput.chiefComplaint}\n` : '') +
                 (validatedInput.paymentMethod ? `Payment Method: ${validatedInput.paymentMethod}\n` : '') +
                 (validatedInput.specialNotes ? `Special Notes: ${validatedInput.specialNotes}\n` : ''),
-            // Practice Information
+            // Practice Information  
             Calendly__EventPrimaryPublisherName__c: 'Silver State Smiles',
             Calendly__EventPrimaryPublisherEmail__c: 'appointments@silverstatesmiles.com',
+            // Additional required fields that may be needed
+            Calendly__GroupName__c: 'Silver State Smiles',
+            Calendly__ObjectId__c: `obj-${Date.now()}`,
             // Additional Notes
             ...(validatedInput.specialNotes && {
                 Calendly__CustomQuestion5__c: 'Special Notes/Accommodations',
@@ -205,9 +209,19 @@ export async function handlePatientAppointment(args) {
             Calendly__InviteeCanceled__c: false,
             Calendly__IsRescheduled__c: false
         };
+        // Log the record before insertion for debugging
+        logger.info('Attempting to create Salesforce record', {
+            objectType: 'Calendly__CalendlyAction__c',
+            recordFields: Object.keys(appointmentRecord),
+            patientName: `${validatedInput.patientFirstName} ${validatedInput.patientLastName}`
+        });
         // Insert the record
         const result = await conn.sobject('Calendly__CalendlyAction__c').create(appointmentRecord);
         if (!result.success) {
+            logger.error('Salesforce record creation failed', {
+                errors: result.errors,
+                recordData: appointmentRecord
+            });
             throw new Error(`Failed to create appointment: ${result.errors?.join(', ')}`);
         }
         logger.info('Patient appointment created successfully', {
